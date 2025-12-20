@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Droplet,
   Home,
@@ -12,17 +14,17 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useState } from "react";
 
 const items = [
   {
     title: "Home",
-    url: "#",
+    url: "",
     icon: Home,
   },
   {
@@ -48,6 +50,8 @@ const items = [
 ];
 
 export function AppSidebar() {
+  const [optionSelect, setOptionSelect] = useState<string>("Home")
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -71,7 +75,10 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={optionSelect === item.title}
+                    className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                    onClick={() => setOptionSelect(item.title)}
+                  >
                     <a href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
