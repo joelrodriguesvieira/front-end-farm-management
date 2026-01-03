@@ -3,7 +3,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/src/components/ui/card";
 
 export function SectionCards() {
   return (
@@ -44,5 +44,5 @@ export function SectionCards() {
         </CardHeader>
       </Card>
     </div>
-  )
+  );
 }

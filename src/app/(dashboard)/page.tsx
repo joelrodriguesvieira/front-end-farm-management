@@ -1,5 +1,5 @@
-import ActionsTable from "@/components/actions-table";
-import { SectionCards } from "@/components/section-cards";
+import ActionsTable from "@/src/components/shared/actions-table";
+import { SectionCards } from "@/src/features/dashboard/section-cards";
 
 export default function Home() {
   return (
