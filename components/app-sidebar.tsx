@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Droplet,
@@ -8,7 +8,6 @@ import {
   Lightbulb,
   Brain,
 } from "lucide-react";
-
 import {
   Sidebar,
   SidebarContent,
@@ -19,38 +18,19 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 const items = [
-  {
-    title: "Home",
-    url: "",
-    icon: Home,
-  },
-  {
-    title: "Alimentação",
-    url: "#food",
-    icon: UtensilsCrossed,
-  },
-  {
-    title: "Água",
-    url: "#water",
-    icon: Droplet,
-  },
-  {
-    title: "Temperatura",
-    url: "#temperature",
-    icon: Thermometer,
-  },
-  {
-    title: "Luminosidade",
-    url: "#liminosity",
-    icon: Lightbulb,
-  },
+  { title: "Home", url: "/", icon: Home },
+  { title: "Alimentação", url: "/food", icon: UtensilsCrossed },
+  { title: "Água", url: "/water", icon: Droplet },
+  { title: "Temperatura", url: "/temperature", icon: Thermometer },
+  { title: "Luminosidade", url: "/liminosity", icon: Lightbulb },
 ];
 
 export function AppSidebar() {
-  const [optionSelect, setOptionSelect] = useState<string>("Home")
+  const pathname = usePathname();
 
   return (
     <Sidebar>
@@ -73,19 +53,23 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={optionSelect === item.title}
-                    className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
-                    onClick={() => setOptionSelect(item.title)}
-                  >
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {items.map((item) => {
+                const isActive = pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground"
+                    >
+                      <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
