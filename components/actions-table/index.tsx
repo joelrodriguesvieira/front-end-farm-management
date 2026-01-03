@@ -11,8 +11,6 @@ const hours = now.getHours();
 const minutes = now.getMinutes();
 const seconds = now.getSeconds();
 
-
-
 import { columns } from "./columns"
 import { DataTable } from "./data-table"
 
