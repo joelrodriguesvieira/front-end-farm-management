@@ -1,15 +1,13 @@
 "use client";
 
+import { DefaultTableColumns } from "@/src/types/default-table-columns";
 import { ColumnDef } from "@tanstack/react-table";
 
-type Action = {
-  id: string;
+export interface DashboardTableColumns extends DefaultTableColumns {
   sector: string;
-  status: "abastecido" | "desligado" | "ligado" | "acendido" | "apagado";
-  dateTime: string;
-};
+}
 
-export const columns: ColumnDef<Action>[] = [
+export const dashboardColumns: ColumnDef<DashboardTableColumns>[] = [
   {
     accessorKey: "sector",
     header: "Setor",
