@@ -79,7 +79,7 @@ export default function FoodPage() {
           <ActionsTable
             columns={foodTableColumns}
             data={foodData}
-            title="Últimos Abastecimentos"
+            title="Histórico de Abastecimento de Comida"
           />
         </div>
       </div>
