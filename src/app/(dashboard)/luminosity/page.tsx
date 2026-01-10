@@ -173,7 +173,7 @@ export default function LuminosityPage() {
           <Button
             onClick={handleToggleLight}
             variant={isOn ? "destructive" : "default"}
-            className="w-full h-12"
+            className="w-full h-12 cursor-pointer"
           >
             {isOn ? "Desligar Luz" : "Ligar Luz"}
             <Power className="ml-2 h-5 w-5" />
@@ -183,7 +183,7 @@ export default function LuminosityPage() {
             onClick={handleSunrise}
             disabled={sunriseMode || autoMode}
             variant="secondary"
-            className="w-full h-12"
+            className="w-full h-12 cursor-pointer"
           >
             Amanhecer
             <Sunrise className="ml-2 h-5 w-5" />
