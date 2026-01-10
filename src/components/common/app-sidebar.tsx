@@ -26,7 +26,7 @@ const items = [
   { title: "Alimentação", url: "/food", icon: UtensilsCrossed },
   { title: "Água", url: "/water", icon: Droplet },
   { title: "Temperatura", url: "/temperature", icon: Thermometer },
-  { title: "Luminosidade", url: "/liminosity", icon: Lightbulb },
+  { title: "Luminosidade", url: "/luminosity", icon: Lightbulb },
 ];
 
 export function AppSidebar() {
