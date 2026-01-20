@@ -7,10 +7,17 @@ import {
   CardTitle,
   CardDescription,
 } from "@/src/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Switch } from "@/src/components/ui/switch";
 import { Label } from "@/src/components/ui/label";
-import { Lightbulb, Power, Sunrise } from "lucide-react";
+import { Lightbulb, Power, Clock } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -19,6 +26,7 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
+import { Input } from "@/src/components/ui/input";
 import { ActionsTable } from "@/src/components/shared/actions-table";
 import { Slider } from "@/src/components/ui/slider";
 
@@ -42,7 +50,8 @@ export default function LuminosityPage() {
   const [intensity, setIntensity] = useState(70);
   const [isOn, setIsOn] = useState(true);
   const [autoMode, setAutoMode] = useState(false);
-  const [sunriseMode, setSunriseMode] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleTime, setScheduleTime] = useState("06:00");
 
   const getStatus = () => {
     if (!isOn || intensity === 0) return "Baixa";
@@ -54,22 +63,6 @@ export default function LuminosityPage() {
   const handleToggleLight = () => {
     setIsOn((prev) => !prev);
     if (!isOn) setIntensity(60);
-  };
-
-  const handleSunrise = () => {
-    setSunriseMode(true);
-    setIsOn(true);
-    let value = 0;
-
-    const interval = setInterval(() => {
-      value += 10;
-      setIntensity(value);
-
-      if (value >= 100) {
-        clearInterval(interval);
-        setSunriseMode(false);
-      }
-    }, 400);
   };
 
   return (
@@ -173,21 +166,54 @@ export default function LuminosityPage() {
           <Button
             onClick={handleToggleLight}
             variant={isOn ? "destructive" : "default"}
-            className="w-full h-12 cursor-pointer"
+            className="w-full h-12"
           >
             {isOn ? "Desligar Luz" : "Ligar Luz"}
             <Power className="ml-2 h-5 w-5" />
           </Button>
 
-          <Button
-            onClick={handleSunrise}
-            disabled={sunriseMode || autoMode}
-            variant="secondary"
-            className="w-full h-12 cursor-pointer"
-          >
-            Amanhecer
-            <Sunrise className="ml-2 h-5 w-5" />
-          </Button>
+          <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+            <DialogTrigger asChild>
+              <Button
+                disabled={!autoMode}
+                variant="secondary"
+                className="w-full h-12 cursor-pointer"
+              >
+                Agendar Ligamento
+                <Clock className="ml-2 h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent className="sm:max-w-[400px] w-[90%] rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-center">
+                  Definir horário de ligamento
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Horário</Label>
+                  <Input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="h-12 text-lg"
+                  />
+                </div>
+
+                <Button
+                  className="w-full h-12 cursor-pointer"
+                  onClick={() => {
+                    console.log("Ligar luz às:", scheduleTime);
+                    setScheduleOpen(false);
+                  }}
+                >
+                  Salvar agendamento
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
