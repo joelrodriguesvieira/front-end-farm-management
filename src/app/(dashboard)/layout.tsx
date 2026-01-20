@@ -1,44 +1,20 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "@/src/components/shared/globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/src/components/ui/sidebar";
 import { AppSidebar } from "@/src/components/common/app-sidebar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Smart Farm",
-  description: "A smart way to manage your farm.",
-};
-
-export default function RootLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <SidebarProvider>
-          <AppSidebar />
-          <main className="w-full">
-            <div className="flex items-center p-4 md:hidden">
-              <SidebarTrigger />
-            </div>
-            {children}
-          </main>
-        </SidebarProvider>
-      </body>
-    </html>
+    <SidebarProvider>
+      <AppSidebar />
+      <main className="w-full">
+        <div className="flex items-center p-4 md:hidden">
+          <SidebarTrigger />
+        </div>
+        {children}
+      </main>
+    </SidebarProvider>
   );
 }
