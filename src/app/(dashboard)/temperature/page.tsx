@@ -10,7 +10,7 @@ import { TemperatureChart } from "./components/temperature-chart";
 import { Button } from "@/src/components/ui/button";
 import { Power } from "lucide-react";
 import { useState } from "react";
-import { mockSensorsCurrent, mockSensorsHistory } from "@/src/mocks/sensors";
+import { mockSensorsCurrent } from "@/src/mocks/sensors";
 
 const USE_MOCK =
   process.env.NEXT_PUBLIC_USE_MOCK === "true" ||
@@ -52,8 +52,6 @@ export default function TemperaturePage() {
 
         <TemperatureChart />
       </div>
-
-      <div className="flex-1" />
 
       <div className="w-full pb-6 md:pb-12 mt-4">
         <Button

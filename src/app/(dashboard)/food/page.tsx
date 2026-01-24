@@ -1,17 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
 } from "@/src/components/ui/card";
-import { Button } from "@/src/components/ui/button";
 import { Progress } from "@/src/components/ui/progress";
-import { Switch } from "@/src/components/ui/switch";
-import { Label } from "@/src/components/ui/label";
-import { Plus, Lock, Unlock, Wheat } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -20,22 +15,21 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/src/components/ui/dialog";
-import { Input } from "@/src/components/ui/input";
 import { ActionsTable } from "@/src/components/shared/actions-table";
+import { useMemo } from "react";
 
 /* ---------------- MOCK ---------------- */
 
+// simulando retorno do backend
+const foodWeightFromBackend = 400; // em gramas
+
+const MIN_WEIGHT = 100;
+const MAX_WEIGHT = 500;
+
 const foodHistoryMock = [
-  { id: "1", user: "Joel", quantity: "50g", dateTime: "08:00" },
-  { id: "2", user: "Sistema", quantity: "30g", dateTime: "12:00" },
-  { id: "3", user: "Henrique", quantity: "70g", dateTime: "18:00" },
+  { id: "1", user: "Joel", quantity: "—", dateTime: "08:00" },
+  { id: "2", user: "Joel", quantity: "—", dateTime: "12:00" },
+  { id: "3", user: "Joel", quantity: "—", dateTime: "18:00" },
 ];
 
 const foodChartMock = [
@@ -47,32 +41,22 @@ const foodChartMock = [
 ];
 
 export default function FoodPage() {
-  const [quantity, setQuantity] = useState("");
-  const [foodLevel, setFoodLevel] = useState(45);
-  const [blocked, setBlocked] = useState(false);
-  const [autoMode, setAutoMode] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const foodPercentage = useMemo(() => {
+    return Math.max(
+      0,
+      Math.min(
+        ((foodWeightFromBackend - MIN_WEIGHT) / (MAX_WEIGHT - MIN_WEIGHT)) *
+          100,
+        100,
+      ),
+    );
+  }, [foodWeightFromBackend]);
 
   const getStatus = () => {
-    if (foodLevel > 50) return "Normal";
-    if (foodLevel > 20) return "Atenção";
-    return "Crítico";
+    if (foodPercentage > 60) return "Abastecido";
+    if (foodPercentage >= 30) return "Atenção";
+    return "Baixo";
   };
-
-  const handleAddFood = () => {
-    setFoodLevel((prev) => Math.min(prev + Number(quantity) / 5, 100));
-    setQuantity("");
-  };
-
-  const handleReleaseFood = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setFoodLevel((prev) => Math.max(prev - 10, 0));
-      setLoading(false);
-    }, 700);
-  };
-
-  const isDisabled = blocked || getStatus() === "Crítico";
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
@@ -84,9 +68,9 @@ export default function FoodPage() {
             <CardHeader className="px-6">
               <CardDescription>Quantidade atual</CardDescription>
               <CardTitle className="text-2xl tabular-nums">
-                {foodLevel}%
+                {Math.round(foodPercentage)}%
               </CardTitle>
-              <Progress value={foodLevel} className="mt-4 h-3" />
+              <Progress value={foodPercentage} className="mt-4 h-3" />
             </CardHeader>
           </Card>
 
@@ -95,11 +79,11 @@ export default function FoodPage() {
               <CardDescription>Status do estoque</CardDescription>
               <CardTitle
                 className={`text-2xl ${
-                  getStatus() === "Crítico"
+                  getStatus() === "Baixo"
                     ? "text-red-500"
                     : getStatus() === "Atenção"
-                    ? "text-yellow-500"
-                    : "text-green-500"
+                      ? "text-yellow-500"
+                      : "text-green-500"
                 }`}
               >
                 {getStatus()}
@@ -109,9 +93,9 @@ export default function FoodPage() {
 
           <Card>
             <CardHeader className="px-6">
-              <CardDescription>Previsão</CardDescription>
+              <CardDescription>Peso atual</CardDescription>
               <CardTitle className="text-2xl">
-                {foodLevel > 30 ? "2 dias" : "Menos de 1 dia"}
+                {foodWeightFromBackend}g
               </CardTitle>
             </CardHeader>
           </Card>
@@ -119,9 +103,7 @@ export default function FoodPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              Consumo de comida
-            </CardTitle>
+            <CardTitle className="text-base">Histórico do nível</CardTitle>
           </CardHeader>
 
           <div className="h-[220px] px-4 pb-4">
@@ -147,67 +129,6 @@ export default function FoodPage() {
             title="Histórico de Alimentação"
           />
         </div>
-      </div>
-
-      <div className="flex-1" />
-
-      <div className="flex flex-col gap-4 pb-6 md:pb-12 mt-4">
-        <div className="flex items-center justify-between px-1">
-          <Label className="flex items-center gap-2">
-            {blocked ? <Lock size={16} /> : <Unlock size={16} />}
-            Sistema bloqueado
-          </Label>
-          <Switch checked={blocked} onCheckedChange={setBlocked} />
-        </div>
-
-        <div className="flex items-center justify-between px-1">
-          <Label className="flex items-center gap-2">
-            <Wheat size={16} />
-            Modo automático
-          </Label>
-          <Switch checked={autoMode} onCheckedChange={setAutoMode} />
-        </div>
-
-        <Button
-          onClick={handleReleaseFood}
-          disabled={isDisabled || loading}
-          className="w-full h-12 text-base cursor-pointer"
-        >
-          Liberar Comida
-        </Button>
-
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="secondary" className="w-full h-12 cursor-pointer">
-              Abastecer Comida <Plus className="ml-2 h-5 w-5" />
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent className="sm:max-w-[425px] w-[90%] rounded-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-center">
-                Abastecer Comida
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="quantity">Quantidade (g)</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="h-12"
-                />
-              </div>
-
-              <Button onClick={handleAddFood} className="h-12">
-                Confirmar
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
