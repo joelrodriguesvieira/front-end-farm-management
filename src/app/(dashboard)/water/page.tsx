@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -21,25 +21,55 @@ import {
 import { ActionsTable } from "@/src/components/shared/actions-table";
 import { Progress } from "@/src/components/ui/progress";
 import { Switch } from "@/src/components/ui/switch";
+import { useSensors } from "@/src/hooks/use-sensors";
+import { useActions } from "@/src/hooks/use-actions";
+import { Action } from "@/src/lib/api";
 
-const waterHistoryMock = [
-  { id: "1", user: "Joel", amount: "500ml", time: "08:10" },
-  { id: "2", user: "Henrique", amount: "300ml", time: "12:00" },
-  { id: "3", user: "Sistema", amount: "400ml", time: "18:20" },
-];
-
-const waterChartMock = [
-  { time: "08h", level: 80 },
-  { time: "10h", level: 65 },
-  { time: "12h", level: 50 },
-  { time: "14h", level: 45 },
-  { time: "16h", level: 30 },
-];
+interface WaterAction {
+  id: string;
+  user: string;
+  amount: string;
+  time: string;
+}
 
 export default function WaterPage() {
-  const [waterLevel, setWaterLevel] = useState(45);
+  const { currentData, loading: sensorsLoading, error: sensorsError } = useSensors();
+  const { actions: apiActions, create: createAction, loading: actionsLoading } = useActions();
   const [blocked, setBlocked] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [waterActions, setWaterActions] = useState<WaterAction[]>([]);
+  const [chartData, setChartData] = useState<Array<{ time: string; level: number }>>([]);
+
+  const waterLevel = currentData?.waterLevel ?? 0;
+
+  useEffect(() => {
+    if (apiActions && apiActions.length > 0) {
+      const mapped: WaterAction[] = apiActions.map((action: Action) => ({
+        id: action.id,
+        user: action.user?.name || "Sistema",
+        amount: `${action.quantity}ml`,
+        time: new Date(action.createdAt || "").toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+      setWaterActions(mapped);
+    }
+  }, [apiActions]);
+
+  useEffect(() => {
+    // Gerar dados de gráfico baseado no nível atual
+    const now = new Date();
+    const data = [];
+    for (let i = 5; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 30 * 60000);
+      const hours = time.getHours().toString().padStart(2, "0");
+      data.push({
+        time: `${hours}h`,
+        level: Math.max(waterLevel - (5 - i) * 8, 0),
+      });
+    }
+    setChartData(data);
+  }, [waterLevel]);
 
   const getStatus = () => {
     if (waterLevel > 50) return "Normal";
@@ -47,17 +77,44 @@ export default function WaterPage() {
     return "Crítico";
   };
 
-  const handleReleaseWater = () => {
-    setLoading(true);
-
-    setTimeout(() => {
-      setWaterLevel((prev) => Math.max(prev - 10, 0));
-      setLoading(false);
-    }, 800);
+  const handleReleaseWater = async () => {
+    try {
+      await createAction({
+        userId: "user-id", // Será substituído com ID real do usuário autenticado
+        system: "water",
+        action: "Liberação manual",
+        quantity: 500,
+      });
+    } catch (err) {
+      console.error("Erro ao liberar água:", err);
+    }
   };
 
-  const isDisabled =
-    blocked || waterLevel <= 0 || getStatus() === "Crítico";
+  const isDisabled = blocked || waterLevel <= 0 || getStatus() === "Crítico" || actionsLoading || sensorsLoading;
+
+  if (sensorsLoading && !currentData) {
+    return (
+      <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full">
+        <h1 className="text-2xl font-semibold">Água</h1>
+        <Card className="animate-pulse">
+          <CardHeader>Carregando...</CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (sensorsError) {
+    return (
+      <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full">
+        <h1 className="text-2xl font-semibold">Água</h1>
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardDescription className="text-red-700">{sensorsError}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
@@ -103,13 +160,23 @@ export default function WaterPage() {
 
           <div className="h-[220px] px-4 pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={waterChartMock}>
-                <XAxis dataKey="time" />
-                <YAxis />
-                <Tooltip />
+              <LineChart data={chartData}>
+                <XAxis dataKey="time" stroke="#888888" style={{ fontSize: "12px" }} />
+                <YAxis stroke="#888888" style={{ fontSize: "12px" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1f2937",
+                    border: "1px solid #374151",
+                    borderRadius: "8px",
+                  }}
+                  labelStyle={{ color: "#f3f4f6" }}
+                />
                 <Line
                   type="monotone"
                   dataKey="level"
+                  stroke="#3b82f6"
+                  dot={{ fill: "#3b82f6", r: 4 }}
+                  activeDot={{ r: 6 }}
                   strokeWidth={2}
                 />
               </LineChart>
@@ -125,7 +192,7 @@ export default function WaterPage() {
               { accessorKey: "amount", header: "Quantidade" },
               { accessorKey: "time", header: "Horário" },
             ]}
-            data={waterHistoryMock}
+            data={waterActions.length > 0 ? waterActions : []}
           />
         </div>
       </div>
@@ -143,10 +210,10 @@ export default function WaterPage() {
 
         <Button
           onClick={handleReleaseWater}
-          disabled={isDisabled || loading}
+          disabled={isDisabled}
           className="cursor-pointer w-full h-12 text-base"
         >
-          Liberar Água
+          {actionsLoading ? "Processando..." : "Liberar Água"}
           <Droplet className="ml-2 h-5 w-5" />
         </Button>
       </div>

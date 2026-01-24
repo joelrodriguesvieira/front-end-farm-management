@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -29,41 +29,139 @@ import {
 import { Input } from "@/src/components/ui/input";
 import { ActionsTable } from "@/src/components/shared/actions-table";
 import { Slider } from "@/src/components/ui/slider";
+import { useSensors } from "@/src/hooks/use-sensors";
+import { useConfig } from "@/src/hooks/use-config";
+import { useActions } from "@/src/hooks/use-actions";
 
-const luminosityChartMock = [
-  { time: "06h", value: 10 },
-  { time: "08h", value: 40 },
-  { time: "10h", value: 70 },
-  { time: "12h", value: 90 },
-  { time: "14h", value: 80 },
-  { time: "16h", value: 60 },
-  { time: "18h", value: 30 },
-];
-
-const luminosityHistoryMock = [
-  { id: "1", user: "Sistema", action: "Automático", time: "06:00" },
-  { id: "2", user: "Joel", action: "Manual 80%", time: "10:15" },
-  { id: "3", user: "Sistema", action: "Desligado", time: "18:00" },
-];
+interface LuminosityAction {
+  id: string;
+  user: string;
+  action: string;
+  time: string;
+}
 
 export default function LuminosityPage() {
+  const { currentData, loading: sensorsLoading, error: sensorsError } = useSensors();
+  const { config, update: updateConfig, loading: configLoading } = useConfig();
+  const { actions: apiActions, create: createAction, loading: actionsLoading } = useActions();
+  
   const [intensity, setIntensity] = useState(70);
   const [isOn, setIsOn] = useState(true);
   const [autoMode, setAutoMode] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleTime, setScheduleTime] = useState("06:00");
+  const [luminosityActions, setLuminosityActions] = useState<LuminosityAction[]>([]);
+  const [chartData, setChartData] = useState<Array<{ time: string; value: number }>>([]);
+
+  const luminosity = currentData?.luminosity ?? 0;
+
+  useEffect(() => {
+    if (apiActions && apiActions.length > 0) {
+      const mapped: LuminosityAction[] = apiActions.map((action) => ({
+        id: action.id,
+        user: action.user?.name || "Sistema",
+        action: `${action.action} - ${action.quantity}%`,
+        time: new Date(action.createdAt || "").toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+      setLuminosityActions(mapped);
+    }
+  }, [apiActions]);
+
+  useEffect(() => {
+    // Gerar dados de gráfico baseado na luminosidade atual
+    const now = new Date();
+    const data = [];
+    for (let i = 5; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 30 * 60000);
+      const hours = time.getHours().toString().padStart(2, "0");
+      const baseValue = hours >= "18" || hours <= "06" ? 20 : 70;
+      data.push({
+        time: `${hours}h`,
+        value: Math.max(baseValue - (5 - i) * 10, Math.ceil(luminosity / 10)),
+      });
+    }
+    setChartData(data);
+  }, [luminosity]);
 
   const getStatus = () => {
-    if (!isOn || intensity === 0) return "Baixa";
+    if (!isOn || intensity === 0) return "Desligada";
     if (intensity < 40) return "Baixa";
     if (intensity < 80) return "Ideal";
     return "Alta";
   };
 
-  const handleToggleLight = () => {
-    setIsOn((prev) => !prev);
-    if (!isOn) setIntensity(60);
+  const handleToggleLight = async () => {
+    const newState = !isOn;
+    setIsOn(newState);
+    if (!newState) setIntensity(0);
+    
+    try {
+      await createAction({
+        userId: "user-id",
+        system: "lighting",
+        action: newState ? "Ligar luz" : "Desligar luz",
+        quantity: newState ? intensity : 0,
+      });
+    } catch (err) {
+      console.error("Erro ao controlar luz:", err);
+    }
   };
+
+  const handleAutoModeChange = async (value: boolean) => {
+    setAutoMode(value);
+    
+    try {
+      await updateConfig({
+        lighting: {
+          enabled: value,
+          schedule: { on: "06:00", off: "20:00" },
+        },
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar configuração:", err);
+    }
+  };
+
+  const handleSchedule = async () => {
+    try {
+      await updateConfig({
+        lighting: {
+          enabled: true,
+          schedule: { on: scheduleTime, off: "20:00" },
+        },
+      });
+      setScheduleOpen(false);
+    } catch (err) {
+      console.error("Erro ao agendar:", err);
+    }
+  };
+
+  if (sensorsLoading && !currentData) {
+    return (
+      <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full">
+        <h1 className="text-2xl font-semibold">Luminosidade</h1>
+        <Card className="animate-pulse">
+          <CardHeader>Carregando...</CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (sensorsError) {
+    return (
+      <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full">
+        <h1 className="text-2xl font-semibold">Luminosidade</h1>
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardDescription className="text-red-700">{sensorsError}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
@@ -75,7 +173,7 @@ export default function LuminosityPage() {
             <CardHeader className="px-6">
               <CardDescription>Luminosidade atual</CardDescription>
               <CardTitle className="text-2xl tabular-nums">
-                {isOn ? `${intensity}%` : "Desligada"}
+                {luminosity.toFixed(0)}%
               </CardTitle>
             </CardHeader>
           </Card>
@@ -97,8 +195,8 @@ export default function LuminosityPage() {
                   getStatus() === "Alta"
                     ? "text-yellow-500"
                     : getStatus() === "Ideal"
-                      ? "text-green-500"
-                      : "text-muted-foreground"
+                    ? "text-green-500"
+                    : "text-muted-foreground"
                 }`}
               >
                 {getStatus()}
@@ -116,11 +214,25 @@ export default function LuminosityPage() {
 
           <div className="h-[220px] px-4 pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={luminosityChartMock}>
-                <XAxis dataKey="time" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" strokeWidth={2} />
+              <LineChart data={chartData}>
+                <XAxis dataKey="time" stroke="#888888" style={{ fontSize: "12px" }} />
+                <YAxis stroke="#888888" style={{ fontSize: "12px" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1f2937",
+                    border: "1px solid #374151",
+                    borderRadius: "8px",
+                  }}
+                  labelStyle={{ color: "#f3f4f6" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#fbbf24"
+                  dot={{ fill: "#fbbf24", r: 4 }}
+                  activeDot={{ r: 6 }}
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -134,7 +246,7 @@ export default function LuminosityPage() {
               { accessorKey: "action", header: "Ação" },
               { accessorKey: "time", header: "Horário" },
             ]}
-            data={luminosityHistoryMock}
+            data={luminosityActions.length > 0 ? luminosityActions : []}
           />
         </div>
       </div>
@@ -152,6 +264,7 @@ export default function LuminosityPage() {
             disabled={!isOn || autoMode}
             onValueChange={(v) => setIntensity(v[0])}
           />
+          <p className="text-sm text-gray-500">{intensity}%</p>
         </div>
 
         <div className="flex items-center justify-between">
@@ -159,7 +272,7 @@ export default function LuminosityPage() {
             <Lightbulb size={16} />
             Modo automático
           </Label>
-          <Switch checked={autoMode} onCheckedChange={setAutoMode} />
+          <Switch checked={autoMode} onCheckedChange={handleAutoModeChange} disabled={configLoading} />
         </div>
 
         <div className="flex flex-col gap-3">
@@ -167,15 +280,16 @@ export default function LuminosityPage() {
             onClick={handleToggleLight}
             variant={isOn ? "destructive" : "default"}
             className="w-full h-12"
+            disabled={actionsLoading}
           >
-            {isOn ? "Desligar Luz" : "Ligar Luz"}
+            {actionsLoading ? "Processando..." : isOn ? "Desligar Luz" : "Ligar Luz"}
             <Power className="ml-2 h-5 w-5" />
           </Button>
 
           <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
             <DialogTrigger asChild>
               <Button
-                disabled={!autoMode}
+                disabled={!autoMode || configLoading}
                 variant="secondary"
                 className="w-full h-12 cursor-pointer"
               >
@@ -204,12 +318,10 @@ export default function LuminosityPage() {
 
                 <Button
                   className="w-full h-12 cursor-pointer"
-                  onClick={() => {
-                    console.log("Ligar luz às:", scheduleTime);
-                    setScheduleOpen(false);
-                  }}
+                  onClick={handleSchedule}
+                  disabled={configLoading}
                 >
-                  Salvar agendamento
+                  {configLoading ? "Salvando..." : "Salvar agendamento"}
                 </Button>
               </div>
             </DialogContent>
@@ -219,3 +331,4 @@ export default function LuminosityPage() {
     </div>
   );
 }
+

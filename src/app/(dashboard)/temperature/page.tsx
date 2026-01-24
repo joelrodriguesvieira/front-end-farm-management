@@ -9,21 +9,65 @@ import {
 import { TemperatureChart } from "./components/temperature-chart";
 import { Button } from "@/src/components/ui/button";
 import { Power } from "lucide-react";
-import { useState } from "react";
-import { mockSensorsCurrent, mockSensorsHistory } from "@/src/mocks/sensors";
-
-const USE_MOCK =
-  process.env.NEXT_PUBLIC_USE_MOCK === "true" ||
-  !process.env.NEXT_PUBLIC_API_URL;
+import { useState, useEffect } from "react";
+import { sensorsService, SensorData } from "@/src/lib/api";
 
 export default function TemperaturePage() {
   const [ventOn, setVentOn] = useState(false);
+  const [currentSensor, setCurrentSensor] = useState<SensorData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCurrentSensor = async () => {
+      try {
+        setLoading(true);
+        const data = await sensorsService.getCurrent();
+        setCurrentSensor(data);
+        setError(null);
+      } catch (err) {
+        console.error("Erro ao buscar dados de sensores:", err);
+        setError("Erro ao carregar dados dos sensores");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentSensor();
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(fetchCurrentSensor, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleToggleVent = () => {
     setTimeout(() => {
       setVentOn(!ventOn);
     }, 200);
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
+        <h1 className="text-2xl font-semibold">Temperatura</h1>
+        <Card className="animate-pulse">
+          <CardHeader>Carregando...</CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
+        <h1 className="text-2xl font-semibold">Temperatura</h1>
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardDescription className="text-red-700">{error}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
@@ -35,7 +79,7 @@ export default function TemperaturePage() {
             <CardHeader className="flex flex-col justify-center items-center lg:items-start px-6">
               <CardDescription>Temperatura atual</CardDescription>
               <CardTitle className="text-2xl font-semibold tabular-nums">
-                {mockSensorsCurrent.temperature}º
+                {currentSensor?.temperature ?? "--"}º
               </CardTitle>
             </CardHeader>
           </Card>
@@ -44,7 +88,7 @@ export default function TemperaturePage() {
             <CardHeader className="flex flex-col justify-center items-center lg:items-start px-6">
               <CardDescription>Umidade atual</CardDescription>
               <CardTitle className="text-2xl font-semibold tabular-nums">
-                {mockSensorsCurrent.humidity}%
+                {currentSensor?.humidity ?? "--"}%
               </CardTitle>
             </CardHeader>
           </Card>

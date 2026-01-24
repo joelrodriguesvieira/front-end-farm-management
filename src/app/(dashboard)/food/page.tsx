@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -29,50 +29,119 @@ import {
 } from "@/src/components/ui/dialog";
 import { Input } from "@/src/components/ui/input";
 import { ActionsTable } from "@/src/components/shared/actions-table";
+import { useSensors } from "@/src/hooks/use-sensors";
+import { useActions } from "@/src/hooks/use-actions";
+import { Action } from "@/src/lib/api";
 
-/* ---------------- MOCK ---------------- */
-
-const foodHistoryMock = [
-  { id: "1", user: "Joel", quantity: "50g", dateTime: "08:00" },
-  { id: "2", user: "Sistema", quantity: "30g", dateTime: "12:00" },
-  { id: "3", user: "Henrique", quantity: "70g", dateTime: "18:00" },
-];
-
-const foodChartMock = [
-  { time: "08h", level: 90 },
-  { time: "10h", level: 75 },
-  { time: "12h", level: 60 },
-  { time: "14h", level: 45 },
-  { time: "16h", level: 30 },
-];
+interface FoodAction {
+  id: string;
+  user: string;
+  quantity: string;
+  dateTime: string;
+}
 
 export default function FoodPage() {
+  const { currentData, loading: sensorsLoading, error: sensorsError } = useSensors();
+  const { actions: apiActions, create: createAction, loading: actionsLoading } = useActions();
   const [quantity, setQuantity] = useState("");
-  const [foodLevel, setFoodLevel] = useState(45);
   const [blocked, setBlocked] = useState(false);
   const [autoMode, setAutoMode] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [foodActions, setFoodActions] = useState<FoodAction[]>([]);
+  const [chartData, setChartData] = useState<Array<{ time: string; level: number }>>([]);
+
+  const foodLevel = currentData?.rationWeight ?? 0;
+
+  useEffect(() => {
+    if (apiActions && apiActions.length > 0) {
+      const mapped: FoodAction[] = apiActions.map((action: Action) => ({
+        id: action.id,
+        user: action.user?.name || "Sistema",
+        quantity: `${action.quantity}g`,
+        dateTime: new Date(action.createdAt || "").toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+      setFoodActions(mapped);
+    }
+  }, [apiActions]);
+
+  useEffect(() => {
+    // Gerar dados de gráfico baseado no nível atual
+    const now = new Date();
+    const data = [];
+    for (let i = 5; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 30 * 60000);
+      const hours = time.getHours().toString().padStart(2, "0");
+      data.push({
+        time: `${hours}h`,
+        level: Math.max(100 - (5 - i) * 10, Math.ceil(foodLevel / 50)),
+      });
+    }
+    setChartData(data);
+  }, [foodLevel]);
 
   const getStatus = () => {
-    if (foodLevel > 50) return "Normal";
-    if (foodLevel > 20) return "Atenção";
+    if (foodLevel > 500) return "Normal";
+    if (foodLevel > 200) return "Atenção";
     return "Crítico";
   };
 
-  const handleAddFood = () => {
-    setFoodLevel((prev) => Math.min(prev + Number(quantity) / 5, 100));
-    setQuantity("");
+  const handleAddFood = async () => {
+    if (!quantity) return;
+    try {
+      await createAction({
+        userId: "user-id",
+        system: "food",
+        action: "Abastecimento",
+        quantity: Number(quantity),
+      });
+      setQuantity("");
+    } catch (err) {
+      console.error("Erro ao adicionar comida:", err);
+    }
   };
 
-  const handleReleaseFood = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setFoodLevel((prev) => Math.max(prev - 10, 0));
-      setLoading(false);
-    }, 700);
+  const handleReleaseFood = async () => {
+    try {
+      await createAction({
+        userId: "user-id",
+        system: "food",
+        action: "Liberação manual",
+        quantity: 50,
+      });
+    } catch (err) {
+      console.error("Erro ao liberar comida:", err);
+    }
   };
 
   const isDisabled = blocked || getStatus() === "Crítico";
+
+  if (sensorsLoading && !currentData) {
+    return (
+      <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full">
+        <h1 className="text-2xl font-semibold">Alimentação</h1>
+        <Card className="animate-pulse">
+          <CardHeader>Carregando...</CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (sensorsError) {
+    return (
+      <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full">
+        <h1 className="text-2xl font-semibold">Alimentação</h1>
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardDescription className="text-red-700">{sensorsError}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  const foodLevelPercent = Math.ceil((foodLevel / 1000) * 100);
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
@@ -84,9 +153,9 @@ export default function FoodPage() {
             <CardHeader className="px-6">
               <CardDescription>Quantidade atual</CardDescription>
               <CardTitle className="text-2xl tabular-nums">
-                {foodLevel}%
+                {foodLevel.toFixed(1)}g
               </CardTitle>
-              <Progress value={foodLevel} className="mt-4 h-3" />
+              <Progress value={Math.min(foodLevelPercent, 100)} className="mt-4 h-3" />
             </CardHeader>
           </Card>
 
@@ -111,7 +180,7 @@ export default function FoodPage() {
             <CardHeader className="px-6">
               <CardDescription>Previsão</CardDescription>
               <CardTitle className="text-2xl">
-                {foodLevel > 30 ? "2 dias" : "Menos de 1 dia"}
+                {foodLevel > 300 ? "2+ dias" : foodLevel > 100 ? "1 dia" : "Menos de 1 dia"}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -126,11 +195,25 @@ export default function FoodPage() {
 
           <div className="h-[220px] px-4 pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={foodChartMock}>
-                <XAxis dataKey="time" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="level" strokeWidth={2} />
+              <LineChart data={chartData}>
+                <XAxis dataKey="time" stroke="#888888" style={{ fontSize: "12px" }} />
+                <YAxis stroke="#888888" style={{ fontSize: "12px" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1f2937",
+                    border: "1px solid #374151",
+                    borderRadius: "8px",
+                  }}
+                  labelStyle={{ color: "#f3f4f6" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="level"
+                  stroke="#f59e0b"
+                  dot={{ fill: "#f59e0b", r: 4 }}
+                  activeDot={{ r: 6 }}
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -143,7 +226,7 @@ export default function FoodPage() {
               { accessorKey: "quantity", header: "Quantidade" },
               { accessorKey: "dateTime", header: "Horário" },
             ]}
-            data={foodHistoryMock}
+            data={foodActions.length > 0 ? foodActions : []}
             title="Histórico de Alimentação"
           />
         </div>
@@ -170,10 +253,10 @@ export default function FoodPage() {
 
         <Button
           onClick={handleReleaseFood}
-          disabled={isDisabled || loading}
+          disabled={isDisabled || actionsLoading}
           className="w-full h-12 text-base cursor-pointer"
         >
-          Liberar Comida
+          {actionsLoading ? "Processando..." : "Liberar Comida"}
         </Button>
 
         <Dialog>
@@ -202,8 +285,8 @@ export default function FoodPage() {
                 />
               </div>
 
-              <Button onClick={handleAddFood} className="h-12">
-                Confirmar
+              <Button onClick={handleAddFood} className="h-12" disabled={!quantity || actionsLoading}>
+                {actionsLoading ? "Confirmando..." : "Confirmar"}
               </Button>
             </div>
           </DialogContent>
@@ -212,3 +295,4 @@ export default function FoodPage() {
     </div>
   );
 }
+
