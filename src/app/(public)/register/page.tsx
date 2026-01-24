@@ -13,12 +13,26 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function RegisterPage() {
-  const [name, setName] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [address, setAddress] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [rg, setRg] = useState("");
+  const [cpfCnpj, setCpfCnpj] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleRegister = () => {
-    console.log({ name, email, password });
+    console.log({
+      fullName,
+      address,
+      birthDate,
+      rg,
+      cpfCnpj,
+      phone,
+      email,
+      password,
+    });
   };
 
   return (
@@ -31,12 +45,67 @@ export default function RegisterPage() {
 
         <div className="px-6 pb-6 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
+            <Label htmlFor="fullName">Nome completo</Label>
             <Input
-              id="name"
-              placeholder="Seu nome"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id="fullName"
+              placeholder="Seu nome completo"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="h-12"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Endereço</Label>
+            <Input
+              id="address"
+              placeholder="Sua rua, número, cidade"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="h-12"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="birthDate">Data de nascimento</Label>
+            <Input
+              id="birthDate"
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              className="h-12"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rg">RG</Label>
+            <Input
+              id="rg"
+              placeholder="Seu RG"
+              value={rg}
+              onChange={(e) => setRg(e.target.value)}
+              className="h-12"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cpfCnpj">CPF ou CNPJ</Label>
+            <Input
+              id="cpfCnpj"
+              placeholder="Seu CPF ou CNPJ"
+              value={cpfCnpj}
+              onChange={(e) => setCpfCnpj(e.target.value)}
+              className="h-12"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Telefone</Label>
+            <Input
+              id="phone"
+              placeholder="(XX) XXXXX-XXXX"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="h-12"
             />
           </div>
