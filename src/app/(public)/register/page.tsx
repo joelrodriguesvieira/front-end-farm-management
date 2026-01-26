@@ -23,31 +23,34 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
-  const [error, setError] = useState("")
+  const [error, setError] = useState("");
 
   const handleRegister = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}api/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: fullName,
+            address,
+            birthDate,
+            rg,
+            cpfCnpj,
+            phone,
+            email,
+            password,
+          }),
         },
-        body: JSON.stringify({
-          name: fullName,
-          address,
-          birthDate,
-          rg,
-          cpfCnpj,
-          phone,
-          email,
-          password,
-        }),
-      });
-      console.log(response, "response")
+      );
+      console.log(response, "response");
 
       if (!response.ok) {
         const error = await response.json();
-        setError(error.message)
+        setError(error.message);
         throw new Error(error.message || "Erro ao cadastrar");
       }
 
@@ -164,7 +167,11 @@ export default function RegisterPage() {
             Criar conta
           </Button>
 
-          {error && <p class="text-red-700 text-sm text-center font-bold">{error.toUpperCase()}</p>}
+          {error && (
+            <p className="text-red-700 text-sm text-center font-bold">
+              {error.toUpperCase()}
+            </p>
+          )}
 
           <p className="text-center text-sm text-muted-foreground">
             Já tem uma conta?{" "}
