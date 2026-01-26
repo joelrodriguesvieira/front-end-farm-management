@@ -59,6 +59,11 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+export interface SensorHistoryResponse {
+  value: Sensor[];
+  Count: number;
+}
+
 export interface ApiError {
   message: string;
 }

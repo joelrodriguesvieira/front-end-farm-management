@@ -21,10 +21,10 @@ import { useMemo } from "react";
 import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function FoodPage() {
-  const { sensor, loading: sensorLoading } = useSensor();
+  const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
   const { history, loading: historyLoading } = useSensorHistory(10);
-  const { actions } = useActions();
-  const { config } = useConfig();
+  const { actions, loading: actionsLoading, error: actionsError } = useActions();
+  const { config, error: configError } = useConfig();
 
   const foodWeight = sensor?.rationWeight || 0;
   const minWeight = config?.ration?.minWeight || 100;
@@ -80,6 +80,13 @@ export default function FoodPage() {
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold">Alimentação</h1>
+
+        {(sensorError || configError) && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+            {sensorError && <p>❌ Erro ao carregar dados de sensor: {sensorError.message}</p>}
+            {configError && <p>❌ Erro ao carregar configurações: {configError.message}</p>}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <Card>
@@ -147,9 +154,14 @@ export default function FoodPage() {
               { accessorKey: "quantity", header: "Quantidade" },
               { accessorKey: "dateTime", header: "Horário" },
             ]}
-            data={foodHistoryData}
-            title="Histórico de Alimentação"
+            data={actionsLoading ? [] : foodHistoryData}
+            title={actionsLoading ? "Carregando histórico..." : "Histórico de Alimentação"}
           />
+          {actionsError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+              Erro ao carregar histórico: {actionsError.message}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -188,3 +188,19 @@ export function useActions(initialData?: Action[] | null) {
 
   return { actions, loading, error, createAction };
 }
+
+// ==================== POLLING HOOK ====================
+// Optional: Use this hook to auto-refresh data at intervals
+export function usePolling(callback: () => Promise<void>, interval: number = 5000, enabled: boolean = true) {
+  useEffect(() => {
+    if (!enabled) return;
+
+    // Call immediately on mount
+    callback();
+
+    // Setup interval
+    const timerId = setInterval(callback, interval);
+
+    return () => clearInterval(timerId);
+  }, [callback, interval, enabled]);
+}

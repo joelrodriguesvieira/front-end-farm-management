@@ -4,6 +4,7 @@ import {
   Config,
   Action,
   ApiError,
+  SensorHistoryResponse,
 } from "@/src/types/api";
 
 const API_BASE_URL =
@@ -52,21 +53,25 @@ class ApiService {
    * @param skip - Number of records to skip (default: 0)
    */
   async getSensors(limit: number = 1, skip: number = 0): Promise<Sensor | Sensor[]> {
-    return this.request(`/sensors?limit=${limit}&skip=${skip}`);
+    const response = await this.request<SensorHistoryResponse>(`/sensors?limit=${limit}&skip=${skip}`);
+    return response.value || response;
   }
 
   /**
    * Fetch latest sensor reading
    */
   async getLatestSensor(): Promise<Sensor> {
-    return this.request("/sensors?limit=1");
+    const response = await this.request<SensorHistoryResponse>("/sensors?limit=1");
+    const data = response.value || response;
+    return Array.isArray(data) ? data[0] : data;
   }
 
   /**
    * Fetch sensor history
    */
   async getSensorHistory(limit: number = 10, skip: number = 0): Promise<Sensor[]> {
-    return this.request(`/sensors?limit=${limit}&skip=${skip}`);
+    const response = await this.request<SensorHistoryResponse>(`/sensors?limit=${limit}&skip=${skip}`);
+    return response.value || response;
   }
 
   /**

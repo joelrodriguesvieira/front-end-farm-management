@@ -20,7 +20,7 @@ import { Label } from "@/src/components/ui/label";
 import { Lightbulb, Power, Clock } from "lucide-react";
 import { ActionsTable } from "@/src/components/shared/actions-table";
 import { Input } from "@/src/components/ui/input";
-import { useDevices, useConfig, useActions } from "@/src/hooks/useApi";
+import { useDevices, useConfig, useActions, useSensor } from "@/src/hooks/useApi";
 import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function LuminosityPage() {
@@ -28,9 +28,10 @@ export default function LuminosityPage() {
   const [onTime, setOnTime] = useState("06:00");
   const [offTime, setOffTime] = useState("18:00");
 
-  const { devices, updateDeviceStatus, loading: devicesLoading } = useDevices();
-  const { config, updateConfig, loading: configLoading } = useConfig();
-  const { actions } = useActions();
+  const { devices, updateDeviceStatus, loading: devicesLoading, error: devicesError } = useDevices();
+  const { config, updateConfig, loading: configLoading, error: configError } = useConfig();
+  const { actions, loading: actionsLoading, error: actionsError } = useActions();
+  const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
 
   // Update local state when config loads
   useEffect(() => {
@@ -103,11 +104,29 @@ export default function LuminosityPage() {
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold">Luminosidade</h1>
 
+        {(devicesError || configError || actionsError || sensorError) && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+            {devicesError && <p>❌ Erro ao carregar dispositivos: {devicesError.message}</p>}
+            {configError && <p>❌ Erro ao carregar configurações: {configError.message}</p>}
+            {actionsError && <p>❌ Erro ao carregar histórico: {actionsError.message}</p>}
+            {sensorError && <p>❌ Erro ao carregar sensores: {sensorError.message}</p>}
+          </div>
+        )}
+
         {/* STATUS */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <Card>
             <CardHeader className="px-6">
-              <CardDescription>Estado atual</CardDescription>
+              <CardDescription>Luminosidade atual</CardDescription>
+              <CardTitle className="text-2xl">
+                {sensorLoading ? <Skeleton className="h-8 w-16" /> : `${sensor?.luminosity || 0} lux`}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader className="px-6">
+              <CardDescription>Estado da luz</CardDescription>
               <CardTitle
                 className={`text-2xl flex items-center gap-2 ${
                   isOn ? "text-green-500" : "text-muted-foreground"
@@ -132,13 +151,13 @@ export default function LuminosityPage() {
         {/* HISTÓRICO */}
         <div className="overflow-x-auto">
           <ActionsTable
-            title="Histórico de ações"
+            title={actionsLoading ? "Carregando histórico..." : "Histórico de ações"}
             columns={[
               { accessorKey: "user", header: "Usuário" },
               { accessorKey: "action", header: "Ação" },
               { accessorKey: "time", header: "Horário" },
             ]}
-            data={luminosityHistoryData}
+            data={actionsLoading ? [] : luminosityHistoryData}
           />
         </div>
       </div>
