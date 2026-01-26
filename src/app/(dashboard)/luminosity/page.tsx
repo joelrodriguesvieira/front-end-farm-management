@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -20,23 +20,81 @@ import { Label } from "@/src/components/ui/label";
 import { Lightbulb, Power, Clock } from "lucide-react";
 import { ActionsTable } from "@/src/components/shared/actions-table";
 import { Input } from "@/src/components/ui/input";
-
-/* ---------------- MOCK ---------------- */
-
-const luminosityHistoryMock = [
-  { id: "1", user: "Sistema", action: "Ligou automaticamente", time: "06:00" },
-  { id: "2", user: "Joel", action: "Desligou manualmente", time: "10:15" },
-  { id: "3", user: "Sistema", action: "Desligou automaticamente", time: "18:00" },
-];
+import { useDevices, useConfig, useActions } from "@/src/hooks/useApi";
+import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function LuminosityPage() {
-  // vindo do backend futuramente
-  const [isOn, setIsOn] = useState(true);
-
-  const [autoMode, setAutoMode] = useState(true);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [onTime, setOnTime] = useState("06:00");
   const [offTime, setOffTime] = useState("18:00");
+
+  const { devices, updateDeviceStatus, loading: devicesLoading } = useDevices();
+  const { config, updateConfig, loading: configLoading } = useConfig();
+  const { actions } = useActions();
+
+  // Update local state when config loads
+  useEffect(() => {
+    if (config?.light?.onTime) setOnTime(config.light.onTime);
+    if (config?.light?.offTime) setOffTime(config.light.offTime);
+  }, [config]);
+
+  // Find lamp device
+  const lampDevice = devices.find((d) => d.type === "lamp");
+  const isOn = lampDevice?.status === "on";
+  const autoMode = config?.mode === "auto";
+
+  const handleToggleLight = async () => {
+    if (!lampDevice) return;
+    try {
+      const newStatus = isOn ? "off" : "on";
+      await updateDeviceStatus(lampDevice.id, newStatus as "on" | "off");
+    } catch (error) {
+      console.error("Failed to toggle light:", error);
+    }
+  };
+
+  const handleToggleAutoMode = async () => {
+    try {
+      const newMode = autoMode ? "manual" : "auto";
+      await updateConfig({ mode: newMode });
+    } catch (error) {
+      console.error("Failed to toggle auto mode:", error);
+    }
+  };
+
+  const handleSaveSchedule = async () => {
+    try {
+      await updateConfig({
+        light: {
+          control: config?.light?.control || "manual",
+          ldrThreshold: config?.light?.ldrThreshold,
+          onTime,
+          offTime,
+        },
+      });
+      setScheduleOpen(false);
+    } catch (error) {
+      console.error("Failed to save schedule:", error);
+    }
+  };
+
+  // Format actions data for table
+  const luminosityHistoryData = actions
+    .filter((a) => a.system === "light")
+    .slice(0, 10)
+    .map((action) => {
+      const date = new Date(action.createdAt);
+      const timeString = date.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return {
+        id: action.id.toString(),
+        user: "Sistema",
+        action: action.action.replace(/_/g, " "),
+        time: timeString,
+      };
+    });
 
   const statusLabel = isOn ? "Acesa" : "Apagada";
 
@@ -56,7 +114,7 @@ export default function LuminosityPage() {
                 }`}
               >
                 <Lightbulb className="h-6 w-6" />
-                {statusLabel}
+                {devicesLoading ? <Skeleton className="h-8 w-20" /> : statusLabel}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -65,7 +123,7 @@ export default function LuminosityPage() {
             <CardHeader className="px-6">
               <CardDescription>Modo de operação</CardDescription>
               <CardTitle className="text-2xl">
-                {autoMode ? "Automático" : "Manual"}
+                {configLoading ? <Skeleton className="h-8 w-24" /> : (autoMode ? "Automático" : "Manual")}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -80,7 +138,7 @@ export default function LuminosityPage() {
               { accessorKey: "action", header: "Ação" },
               { accessorKey: "time", header: "Horário" },
             ]}
-            data={luminosityHistoryMock}
+            data={luminosityHistoryData}
           />
         </div>
       </div>
@@ -92,12 +150,16 @@ export default function LuminosityPage() {
             <Lightbulb size={16} />
             Modo automático
           </Label>
-          <Switch checked={autoMode} onCheckedChange={setAutoMode} />
+          <Switch
+            checked={autoMode}
+            onCheckedChange={handleToggleAutoMode}
+            disabled={configLoading}
+          />
         </div>
 
         <Button
-          onClick={() => setIsOn((prev) => !prev)}
-          disabled={autoMode}
+          onClick={handleToggleLight}
+          disabled={autoMode || devicesLoading || !lampDevice}
           variant={isOn ? "destructive" : "default"}
           className="w-full h-12"
         >
@@ -148,10 +210,8 @@ export default function LuminosityPage() {
 
               <Button
                 className="w-full h-12"
-                onClick={() => {
-                  console.log("Auto ON:", onTime, "Auto OFF:", offTime);
-                  setScheduleOpen(false);
-                }}
+                onClick={handleSaveSchedule}
+                disabled={configLoading}
               >
                 Salvar agendamento
               </Button>

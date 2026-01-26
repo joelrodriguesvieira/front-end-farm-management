@@ -20,48 +20,46 @@ import {
 import { Button } from "@/src/components/ui/button";
 import { Slider } from "@/src/components/ui/slider";
 import { Label } from "@/src/components/ui/label";
-
-/* ---------------- MOCK ---------------- */
-
-const systemStatus = {
-  water: { status: "Atenção" },
-  food: { quantity: "280g", status: "Abastecido" },
-  temperature: { value: 27 },
-  luminosity: { status: "Acesa" },
-};
-
-const dashboardData = [
-  {
-    id: "1",
-    system: "Água",
-    action: "Liberação manual",
-    type: "Manual",
-    time: "10:20",
-  },
-  {
-    id: "2",
-    system: "Luminosidade",
-    action: "Ajuste automático",
-    type: "Automático",
-    time: "06:00",
-  },
-  {
-    id: "3",
-    system: "Alimentação",
-    action: "Abastecimento",
-    type: "Manual",
-    time: "08:15",
-  },
-];
+import { useSensor, useConfig, useActions, useDevices } from "@/src/hooks/useApi";
 
 export default function Home() {
   const [delay, setDelay] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
+  
+  const { sensor } = useSensor();
+  const { updateConfig } = useConfig();
+  const { actions } = useActions();
+  const { devices } = useDevices();
 
-  function handleSaveDelay() {
-    console.log(`Delay configurado para ${delay} segundos`);
-    setDialogOpen(false);
+  async function handleSaveDelay() {
+    try {
+      await updateConfig({ saveInterval: delay });
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Erro ao salvar configuração:", error);
+    }
   }
+
+  // Find device statuses
+  const waterDevice = devices.find((d) => d.type === "pump");
+  const lightDevice = devices.find((d) => d.type === "lamp");
+
+  // Format actions data for table
+  const tableData = actions.slice(0, 10).map((action) => {
+    const date = new Date(action.createdAt);
+    const timeString = date.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return {
+      id: action.id.toString(),
+      system: action.system.charAt(0).toUpperCase() + action.system.slice(1),
+      action: action.action.replace(/_/g, " "),
+      type: "Manual",
+      time: timeString,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full lg:max-w-5xl">
@@ -71,7 +69,7 @@ export default function Home() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatusCard
           title="Água"
-          value={systemStatus.water.status}
+          value={waterDevice?.status === "on" ? "Ativa" : "Inativa"}
           description="Status atual"
           icon={<Droplet />}
           href="/water"
@@ -79,15 +77,15 @@ export default function Home() {
 
         <StatusCard
           title="Alimentação"
-          value={systemStatus.food.quantity}
-          description={systemStatus.food.status}
+          value={sensor?.rationWeight ? `${sensor.rationWeight}g` : "--"}
+          description="Peso do comedouro"
           icon={<Wheat />}
           href="/food"
         />
 
         <StatusCard
           title="Temperatura"
-          value={`${systemStatus.temperature.value}ºC`}
+          value={sensor?.temperature ? `${sensor.temperature}ºC` : "--"}
           description="Atual"
           icon={<Thermometer />}
           href="/temperature"
@@ -95,7 +93,7 @@ export default function Home() {
 
         <StatusCard
           title="Luminosidade"
-          value={systemStatus.luminosity.status}
+          value={lightDevice?.status === "on" ? "Acesa" : "Apagada"}
           description="Status"
           icon={<Lightbulb />}
           href="/luminosity"
@@ -122,7 +120,7 @@ export default function Home() {
             { accessorKey: "type", header: "Tipo" },
             { accessorKey: "time", header: "Horário" },
           ]}
-          data={dashboardData}
+          data={tableData}
         />
       </div>
 
