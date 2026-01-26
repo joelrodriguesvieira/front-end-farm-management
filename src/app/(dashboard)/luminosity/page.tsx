@@ -45,7 +45,6 @@ export default function LuminosityPage() {
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold">Luminosidade</h1>
 
-        {/* STATUS */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <Card>
             <CardHeader className="px-6">
@@ -71,7 +70,6 @@ export default function LuminosityPage() {
           </Card>
         </div>
 
-        {/* HISTÓRICO */}
         <div className="overflow-x-auto">
           <ActionsTable
             title="Histórico de ações"
@@ -85,7 +83,6 @@ export default function LuminosityPage() {
         </div>
       </div>
 
-      {/* CONTROLES */}
       <div className="flex flex-col gap-6 pb-6 md:pb-12 mt-4">
         <div className="flex items-center justify-between">
           <Label className="flex items-center gap-2">
@@ -105,7 +102,6 @@ export default function LuminosityPage() {
           <Power className="ml-2 h-5 w-5" />
         </Button>
 
-        {/* AGENDAMENTO */}
         <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
           <DialogTrigger asChild>
             <Button

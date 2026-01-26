@@ -67,7 +67,6 @@ export default function Home() {
     <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full lg:max-w-5xl">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
 
-      {/* STATUS */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatusCard
           title="Água"
@@ -102,7 +101,6 @@ export default function Home() {
         />
       </div>
 
-      {/* ALERTAS */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Alertas</CardTitle>
@@ -112,7 +110,6 @@ export default function Home() {
         </CardHeader>
       </Card>
 
-      {/* HISTÓRICO */}
       <div className="overflow-x-auto">
         <ActionsTable
           title="Últimas Ações do Sistema"
@@ -126,7 +123,6 @@ export default function Home() {
         />
       </div>
 
-      {/* CONFIGURAÇÃO DE SENSORES */}
       <div className="flex justify-end pt-4">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -151,7 +147,7 @@ export default function Home() {
                 </Label>
 
                 <Slider
-                  min={0}
+                  min={5}
                   max={60}
                   step={1}
                   value={[delay]}
