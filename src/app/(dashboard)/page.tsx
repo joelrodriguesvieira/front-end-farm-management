@@ -20,7 +20,7 @@ import {
 import { Button } from "@/src/components/ui/button";
 import { Slider } from "@/src/components/ui/slider";
 import { Label } from "@/src/components/ui/label";
-import { useSensor, useConfig, useActions, useDevices } from "@/src/hooks/useApi";
+import { useSensor, useConfig, useActions } from "@/src/hooks/useApi";
 
 export default function Home() {
   const [delay, setDelay] = useState(10);
@@ -29,7 +29,6 @@ export default function Home() {
   const { sensor } = useSensor();
   const { updateConfig } = useConfig();
   const { actions } = useActions();
-  const { devices } = useDevices();
 
   async function handleSaveDelay() {
     try {
@@ -40,9 +39,10 @@ export default function Home() {
     }
   }
 
-  // Find device statuses
-  const waterDevice = devices.find((d) => d.type === "pump");
-  const lightDevice = devices.find((d) => d.type === "lamp");
+  // Water status
+  const waterStatus = sensor?.waterLevel ? "Nível Alto" : "Nível Baixo";
+
+
 
   // Format actions data for table
   const tableData = actions.slice(0, 10).map((action) => {
@@ -69,7 +69,7 @@ export default function Home() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatusCard
           title="Água"
-          value={waterDevice?.status === "on" ? "Ativa" : "Inativa"}
+          value={waterStatus}
           description="Status atual"
           icon={<Droplet />}
           href="/water"
@@ -93,7 +93,7 @@ export default function Home() {
 
         <StatusCard
           title="Luminosidade"
-          value={lightDevice?.status === "on" ? "Acesa" : "Apagada"}
+          value="--"
           description="Status"
           icon={<Lightbulb />}
           href="/luminosity"

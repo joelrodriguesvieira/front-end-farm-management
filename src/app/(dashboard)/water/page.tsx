@@ -22,17 +22,20 @@ export default function WaterPage() {
   const { sensor, loading: sensorLoading } = useSensor();
   const { history, loading: historyLoading } = useSensorHistory(10);
 
-  const waterHistoryData = history.map((h) => {
-    const date = new Date(h.createdAt);
-    const timeString = date.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
+  const waterHistoryData = history
+    .slice()
+    .reverse()
+    .map((h) => {
+      const date = new Date(h.createdAt);
+      const timeString = date.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return {
+        time: timeString,
+        level: h.waterLevel ? 1 : 0,
+      };
     });
-    return {
-      time: timeString,
-      level: h.waterLevel ? 1 : 0,
-    };
-  });
 
   const waterStatus = sensor?.waterLevel ? "Nível Alto" : "Nível Baixo";
   const waterStatusColor = sensor?.waterLevel ? "text-green-500" : "text-red-500";

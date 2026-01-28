@@ -46,18 +46,21 @@ export default function FoodPage() {
     return "Baixo";
   };
 
-  const foodChartData = history.map((h) => {
-    const date = new Date(h.createdAt);
-    const timeString = date.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
+  const foodChartData = history
+    .slice()
+    .reverse()
+    .map((h) => {
+      const date = new Date(h.createdAt);
+      const timeString = date.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const percent = Math.max(0, Math.min(((h.rationWeight - minWeight) / (maxWeight - minWeight)) * 100, 100));
+      return {
+        time: timeString,
+        level: Math.round(percent),
+      };
     });
-    const percent = Math.max(0, Math.min(((h.rationWeight - minWeight) / (maxWeight - minWeight)) * 100, 100));
-    return {
-      time: timeString,
-      level: Math.round(percent),
-    };
-  });
 
   const foodHistoryData = actions
     .filter((a) => a.system === "ration")

@@ -20,15 +20,16 @@ import { Label } from "@/src/components/ui/label";
 import { Lightbulb, Power, Clock } from "lucide-react";
 import { ActionsTable } from "@/src/components/shared/actions-table";
 import { Input } from "@/src/components/ui/input";
-import { useDevices, useConfig, useActions, useSensor } from "@/src/hooks/useApi";
+import { useConfig, useActions, useSensor } from "@/src/hooks/useApi";
 import { Skeleton } from "@/src/components/ui/skeleton";
+import { apiService } from "@/src/lib/api";
 
 export default function LuminosityPage() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [onTime, setOnTime] = useState("06:00");
   const [offTime, setOffTime] = useState("18:00");
+  const [commandLoading, setCommandLoading] = useState(false);
 
-  const { devices, updateDeviceStatus, loading: devicesLoading, error: devicesError } = useDevices();
   const { config, updateConfig, loading: configLoading, error: configError } = useConfig();
   const { actions, loading: actionsLoading, error: actionsError } = useActions();
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
@@ -39,18 +40,24 @@ export default function LuminosityPage() {
     if (config?.light?.offTime) setOffTime(config.light.offTime);
   }, [config]);
 
-  // Find lamp device
-  const lampDevice = devices.find((d) => d.type === "lamp");
-  const isOn = lampDevice?.status === "on";
   const autoMode = config?.mode === "auto";
+  const [isOn, setIsOn] = useState(false);
 
   const handleToggleLight = async () => {
-    if (!lampDevice) return;
     try {
-      const newStatus = isOn ? "off" : "on";
-      await updateDeviceStatus(lampDevice.id, newStatus as "on" | "off");
+      setCommandLoading(true);
+      const newState = isOn ? "OFF" : "ON";
+      await apiService.sendCommand({
+        actuator: "light",
+        state: newState,
+        userId: 1,
+      });
+      setIsOn((prev) => !prev);
     } catch (error) {
-      console.error("Failed to toggle light:", error);
+      console.error("Erro ao enviar comando:", error);
+      alert("Erro ao enviar comando para luz");
+    } finally {
+      setCommandLoading(false);
     }
   };
 
@@ -67,7 +74,7 @@ export default function LuminosityPage() {
     try {
       await updateConfig({
         light: {
-          control: config?.light?.control || "manual",
+          control: "schedule",
           ldrThreshold: config?.light?.ldrThreshold,
           onTime,
           offTime,
@@ -104,9 +111,8 @@ export default function LuminosityPage() {
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold">Luminosidade</h1>
 
-        {(devicesError || configError || actionsError || sensorError) && (
+        {(configError || actionsError || sensorError) && (
           <div className="p-4 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-            {devicesError && <p>❌ Erro ao carregar dispositivos: {devicesError.message}</p>}
             {configError && <p>❌ Erro ao carregar configurações: {configError.message}</p>}
             {actionsError && <p>❌ Erro ao carregar histórico: {actionsError.message}</p>}
             {sensorError && <p>❌ Erro ao carregar sensores: {sensorError.message}</p>}
@@ -133,7 +139,7 @@ export default function LuminosityPage() {
                 }`}
               >
                 <Lightbulb className="h-6 w-6" />
-                {devicesLoading ? <Skeleton className="h-8 w-20" /> : statusLabel}
+                {statusLabel}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -178,12 +184,18 @@ export default function LuminosityPage() {
 
         <Button
           onClick={handleToggleLight}
-          disabled={autoMode || devicesLoading || !lampDevice}
+          disabled={autoMode || commandLoading}
           variant={isOn ? "destructive" : "default"}
           className="w-full h-12"
         >
-          {isOn ? "Desligar Luz" : "Ligar Luz"}
-          <Power className="ml-2 h-5 w-5" />
+          {commandLoading ? (
+            <>Enviando comando...</>
+          ) : (
+            <>
+              {isOn ? "Desligar Luz" : "Ligar Luz"}
+              <Power className="ml-2 h-5 w-5" />
+            </>
+          )}
         </Button>
 
         {/* AGENDAMENTO */}

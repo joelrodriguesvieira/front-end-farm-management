@@ -5,6 +5,8 @@ import {
   Action,
   ApiError,
   SensorHistoryResponse,
+  CommandRequest,
+  CommandResponse,
 } from "@/src/types/api";
 
 const API_BASE_URL =
@@ -171,6 +173,18 @@ class ApiService {
     return this.request("/actions", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  // ==================== COMMANDS ====================
+
+  /**
+   * Send a command to an actuator (fan, light, pump)
+   */
+  async sendCommand(command: CommandRequest): Promise<CommandResponse> {
+    return this.request("/command", {
+      method: "POST",
+      body: JSON.stringify(command),
     });
   }
 }

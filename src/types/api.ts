@@ -52,6 +52,17 @@ export interface Action {
   createdAt: string;
 }
 
+// Command Types
+export interface CommandRequest {
+  actuator: "fan" | "light" | "pump";
+  state: "ON" | "OFF";
+  userId: number;
+}
+
+export interface CommandResponse {
+  message: string;
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   data: T;

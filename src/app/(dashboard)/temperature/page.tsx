@@ -10,25 +10,30 @@ import { TemperatureChart } from "./components/temperature-chart";
 import { Button } from "@/src/components/ui/button";
 import { Power } from "lucide-react";
 import { useState } from "react";
-import { useSensor, useDevices } from "@/src/hooks/useApi";
+import { useSensor } from "@/src/hooks/useApi";
 import { Skeleton } from "@/src/components/ui/skeleton";
+import { apiService } from "@/src/lib/api";
 
 export default function TemperaturePage() {
   const [ventOn, setVentOn] = useState(false);
+  const [commandLoading, setCommandLoading] = useState(false);
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
-  const { devices, updateDeviceStatus, loading: devicesLoading } = useDevices();
-
-  // Find fan device (ventilador)
-  const fanDevice = devices.find((d) => d.type === "fan");
 
   const handleToggleVent = async () => {
-    if (!fanDevice) return;
     try {
-      const newStatus = ventOn ? "off" : "on";
-      await updateDeviceStatus(fanDevice.id, newStatus as "on" | "off");
-      setVentOn(!ventOn);
+      setCommandLoading(true);
+      const newState = ventOn ? "OFF" : "ON";
+      await apiService.sendCommand({
+        actuator: "fan",
+        state: newState,
+        userId: 1,
+      });
+      setVentOn((prev) => !prev);
     } catch (error) {
-      console.error("Failed to toggle ventilation:", error);
+      console.error("Erro ao enviar comando:", error);
+      alert("Erro ao enviar comando para ventilação");
+    } finally {
+      setCommandLoading(false);
     }
   };
 
@@ -72,12 +77,18 @@ export default function TemperaturePage() {
       <div className="w-full pb-6 md:pb-12 mt-4">
         <Button
           onClick={handleToggleVent}
-          disabled={devicesLoading || !fanDevice}
+          disabled={commandLoading}
           variant={ventOn ? "destructive" : "default"}
           className="cursor-pointer w-full h-12 text-base"
         >
-          {ventOn ? "Desligar Ventilação" : "Ligar Ventilação"}{" "}
-          <Power className="ml-2 h-5 w-5" />
+          {commandLoading ? (
+            <>Enviando comando...</>
+          ) : (
+            <>
+              {ventOn ? "Desligar Ventilação" : "Ligar Ventilação"}{" "}
+              <Power className="ml-2 h-5 w-5" />
+            </>
+          )}
         </Button>
       </div>
     </div>
