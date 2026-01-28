@@ -11,6 +11,8 @@ import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { formatCpfCnpj, formatPhone, formatRG } from "@/src/shared/helpers";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -21,18 +23,46 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
+  const [error, setError] = useState("");
 
-  const handleRegister = () => {
-    console.log({
-      fullName,
-      address,
-      birthDate,
-      rg,
-      cpfCnpj,
-      phone,
-      email,
-      password,
-    });
+  const handleRegister = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}api/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: fullName,
+            address,
+            birthDate,
+            rg,
+            cpfCnpj,
+            phone,
+            email,
+            password,
+          }),
+        },
+      );
+      console.log(response, "response");
+
+      if (!response.ok) {
+        const error = await response.json();
+        setError(error.message);
+        throw new Error(error.message || "Erro ao cadastrar");
+      }
+
+      const data = await response.json();
+      console.log("Sucesso:", data);
+      alert("Conta criada com sucesso!");
+      router.push("/dashboard");
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Erro inesperado");
+    }
   };
 
   return (
@@ -81,9 +111,9 @@ export default function RegisterPage() {
             <Label htmlFor="rg">RG</Label>
             <Input
               id="rg"
-              placeholder="Seu RG"
+              placeholder="00.000.000-0"
               value={rg}
-              onChange={(e) => setRg(e.target.value)}
+              onChange={(e) => setRg(formatRG(e.target.value))}
               className="h-12"
             />
           </div>
@@ -92,9 +122,9 @@ export default function RegisterPage() {
             <Label htmlFor="cpfCnpj">CPF ou CNPJ</Label>
             <Input
               id="cpfCnpj"
-              placeholder="Seu CPF ou CNPJ"
+              placeholder="CPF ou CNPJ"
               value={cpfCnpj}
-              onChange={(e) => setCpfCnpj(e.target.value)}
+              onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
               className="h-12"
             />
           </div>
@@ -105,7 +135,7 @@ export default function RegisterPage() {
               id="phone"
               placeholder="(XX) XXXXX-XXXX"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
               className="h-12"
             />
           </div>
@@ -137,6 +167,12 @@ export default function RegisterPage() {
           <Button onClick={handleRegister} className="w-full h-12">
             Criar conta
           </Button>
+
+          {error && (
+            <p className="text-red-700 text-sm text-center font-bold">
+              {error.toUpperCase()}
+            </p>
+          )}
 
           <p className="text-center text-sm text-muted-foreground">
             Já tem uma conta?{" "}

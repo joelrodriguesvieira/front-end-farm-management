@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardDescription,
@@ -51,9 +52,9 @@ export default function TemperaturePage() {
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold">Temperatura</h1>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <Card className="sm:min-w-[150px] lg:min-w-[180px]">
-            <CardHeader className="flex flex-col justify-center items-center lg:items-start px-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <Card>
+            <CardHeader className="px-6">
               <CardDescription>Temperatura atual</CardDescription>
               <CardTitle className="text-2xl font-semibold tabular-nums">
                 {sensorLoading ? <Skeleton className="h-8 w-16" /> : `${sensor?.temperature || "--"}º`}
@@ -61,11 +62,25 @@ export default function TemperaturePage() {
             </CardHeader>
           </Card>
 
-          <Card className="sm:min-w-[150px] lg:min-w-[180px]">
-            <CardHeader className="flex flex-col justify-center items-center lg:items-start px-6">
+          <Card>
+            <CardHeader className="px-6">
               <CardDescription>Umidade atual</CardDescription>
               <CardTitle className="text-2xl font-semibold tabular-nums">
                 {sensorLoading ? <Skeleton className="h-8 w-16" /> : `${sensor?.humidity || "--"}%`}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader className="px-6">
+              <CardDescription>Ventilação</CardDescription>
+              <CardTitle
+                className={`text-2xl flex items-center gap-2 ${
+                  ventOn ? "text-green-500" : "text-muted-foreground"
+                }`}
+              >
+                <Fan className="h-6 w-6" />
+                {ventStatusLabel}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -74,7 +89,15 @@ export default function TemperaturePage() {
         <TemperatureChart />
       </div>
 
-      <div className="w-full pb-6 md:pb-12 mt-4">
+      <div className="flex flex-col gap-6 pb-6 md:pb-12 mt-4">
+        <div className="flex items-center justify-between">
+          <Label className="flex items-center gap-2">
+            <Fan size={16} />
+            Modo automático
+          </Label>
+          <Switch checked={autoMode} onCheckedChange={setAutoMode} />
+        </div>
+
         <Button
           onClick={handleToggleVent}
           disabled={commandLoading}

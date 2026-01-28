@@ -174,7 +174,6 @@ export default function LuminosityPage() {
           </Card>
         </div>
 
-        {/* HISTÓRICO */}
         <div className="overflow-x-auto">
           <ActionsTable
             title={actionsLoading ? "Carregando histórico..." : "Histórico de ações"}
@@ -188,7 +187,6 @@ export default function LuminosityPage() {
         </div>
       </div>
 
-      {/* CONTROLES */}
       <div className="flex flex-col gap-6 pb-6 md:pb-12 mt-4">
         <div className="flex items-center justify-between">
           <Label className="flex items-center gap-2">
@@ -218,7 +216,6 @@ export default function LuminosityPage() {
           )}
         </Button>
 
-        {/* AGENDAMENTO */}
         <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
           <DialogTrigger asChild>
             <Button
