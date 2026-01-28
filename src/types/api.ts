@@ -56,6 +56,16 @@ export interface Action {
   };
 }
 
+// Alert Types
+export interface Alert {
+  id: number;
+  type: string;
+  message: string;
+  data?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Command Types
 export interface CommandRequest {
   actuator: "fan" | "light" | "pump";

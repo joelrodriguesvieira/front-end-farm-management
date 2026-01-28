@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiService } from "@/src/lib/api";
-import { Sensor, Config, Device, Action } from "@/src/types/api";
+import { Sensor, Config, Device, Action, Alert } from "@/src/types/api";
 
 // ==================== SENSORS HOOK ====================
 
@@ -203,4 +203,47 @@ export function usePolling(callback: () => Promise<void>, interval: number = 500
 
     return () => clearInterval(timerId);
   }, [callback, interval, enabled]);
+}
+
+// ==================== ALERTS HOOK ====================
+
+export function useAlerts(limit: number = 1) {
+  const [alert, setAlert] = useState<Alert | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        setLoading(true);
+        const data = await apiService.getAlerts(limit);
+        
+        if (data && data.length > 0) {
+          const latestAlert = data[0];
+          const alertTime = new Date(latestAlert.createdAt).getTime();
+          const currentTime = new Date().getTime();
+          const diffInSeconds = (currentTime - alertTime) / 1000;
+          
+          if (diffInSeconds <= 60) {
+            setAlert(latestAlert);
+          } else {
+            setAlert(null);
+          }
+        } else {
+          setAlert(null);
+        }
+        
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Failed to fetch alerts"));
+        setAlert(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAlerts();
+  }, [limit]);
+
+  return { alert, loading, error };
 }

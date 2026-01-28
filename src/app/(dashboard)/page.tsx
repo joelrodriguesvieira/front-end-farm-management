@@ -20,7 +20,7 @@ import {
 import { Button } from "@/src/components/ui/button";
 import { Slider } from "@/src/components/ui/slider";
 import { Label } from "@/src/components/ui/label";
-import { useSensor, useConfig, useActions } from "@/src/hooks/useApi";
+import { useSensor, useConfig, useActions, useAlerts } from "@/src/hooks/useApi";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { apiService } from "@/src/lib/api";
 
@@ -33,6 +33,7 @@ export default function Home() {
   const { sensor } = useSensor();
   const { updateConfig } = useConfig();
   const { actions, loading: actionsLoading, error: actionsError } = useActions();
+  const { alert, loading: alertLoading } = useAlerts(1);
 
   // Fetch light status
   useEffect(() => {
@@ -132,9 +133,22 @@ export default function Home() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Alertas</CardTitle>
-          <CardDescription className="text-green-500">
-            Nenhum alerta crítico no momento
-          </CardDescription>
+          {alertLoading ? (
+            <Skeleton className="h-5 w-48" />
+          ) : alert ? (
+            <div className="flex justify-between items-center">
+              <CardDescription className="text-red-500 font-bold text-lg uppercase flex-1">
+                {alert.message}
+              </CardDescription>
+              <CardDescription className="text-red-500 font-bold text-lg uppercase ml-4 whitespace-nowrap">
+                {new Date(alert.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </CardDescription>
+            </div>
+          ) : (
+            <CardDescription className="text-green-500 text-lg">
+              Nenhum alerta crítico no momento
+            </CardDescription>
+          )}
         </CardHeader>
       </Card>
 

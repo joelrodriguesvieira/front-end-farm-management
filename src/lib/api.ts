@@ -3,6 +3,7 @@ import {
   Device,
   Config,
   Action,
+  Alert,
   ApiError,
   SensorHistoryResponse,
   CommandRequest,
@@ -194,6 +195,20 @@ class ApiService {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  // ==================== ALERTS ====================
+
+  /**
+   * Fetch alerts with optional limit
+   * @param limit - Number of alerts to return
+   */
+  async getAlerts(limit: number = 1): Promise<Alert[]> {
+    let endpoint = "/alerts";
+    if (limit) {
+      endpoint += `?limit=${limit}`;
+    }
+    return this.request(endpoint);
   }
 
   // ==================== COMMANDS ====================
