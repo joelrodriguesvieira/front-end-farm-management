@@ -9,22 +9,43 @@ import {
 } from "@/src/components/ui/card";
 import { TemperatureChart } from "./components/temperature-chart";
 import { Button } from "@/src/components/ui/button";
-import { Switch } from "@/src/components/ui/switch";
-import { Label } from "@/src/components/ui/label";
-import { Power, Fan } from "lucide-react";
-import { mockSensorsCurrent } from "@/src/mocks/sensors";
+import { Power } from "lucide-react";
+import { useState } from "react";
+import { useSensor } from "@/src/hooks/useApi";
+import { Skeleton } from "@/src/components/ui/skeleton";
+import { apiService } from "@/src/lib/api";
 
 export default function TemperaturePage() {
   const [ventOn, setVentOn] = useState(false);
-  const [autoMode, setAutoMode] = useState(true);
+  const [commandLoading, setCommandLoading] = useState(false);
+  const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
 
-  const handleToggleVent = () => {
-    setTimeout(() => {
+  const handleToggleVent = async () => {
+    try {
+      setCommandLoading(true);
+      const newState = ventOn ? "OFF" : "ON";
+      await apiService.sendCommand({
+        actuator: "fan",
+        state: newState,
+        userId: 1,
+      });
       setVentOn((prev) => !prev);
-    }, 200);
+    } catch (error) {
+      console.error("Erro ao enviar comando:", error);
+      alert("Erro ao enviar comando para ventilação");
+    } finally {
+      setCommandLoading(false);
+    }
   };
 
-  const ventStatusLabel = ventOn ? "Ligada" : "Desligada";
+  if (sensorError) {
+    return (
+      <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
+        <h1 className="text-2xl font-semibold">Temperatura</h1>
+        <p className="text-red-500">Erro ao carregar dados: {sensorError.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
@@ -36,7 +57,7 @@ export default function TemperaturePage() {
             <CardHeader className="px-6">
               <CardDescription>Temperatura atual</CardDescription>
               <CardTitle className="text-2xl font-semibold tabular-nums">
-                {mockSensorsCurrent.temperature}ºC
+                {sensorLoading ? <Skeleton className="h-8 w-16" /> : `${sensor?.temperature || "--"}º`}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -45,7 +66,7 @@ export default function TemperaturePage() {
             <CardHeader className="px-6">
               <CardDescription>Umidade atual</CardDescription>
               <CardTitle className="text-2xl font-semibold tabular-nums">
-                {mockSensorsCurrent.humidity}%
+                {sensorLoading ? <Skeleton className="h-8 w-16" /> : `${sensor?.humidity || "--"}%`}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -79,12 +100,18 @@ export default function TemperaturePage() {
 
         <Button
           onClick={handleToggleVent}
-          disabled={autoMode}
+          disabled={commandLoading}
           variant={ventOn ? "destructive" : "default"}
           className="cursor-pointer w-full h-12 text-base"
         >
-          {ventOn ? "Desligar Ventilação" : "Ligar Ventilação"}
-          <Power className="ml-2 h-5 w-5" />
+          {commandLoading ? (
+            <>Enviando comando...</>
+          ) : (
+            <>
+              {ventOn ? "Desligar Ventilação" : "Ligar Ventilação"}{" "}
+              <Power className="ml-2 h-5 w-5" />
+            </>
+          )}
         </Button>
       </div>
     </div>

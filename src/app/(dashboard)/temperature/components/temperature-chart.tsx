@@ -10,28 +10,60 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { mockSensorsHistory } from "@/src/mocks/sensors";
+import { useSensorHistory } from "@/src/hooks/useApi";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/src/components/ui/card";
+import { Skeleton } from "@/src/components/ui/skeleton";
 
 export function TemperatureChart() {
-  const chartData = mockSensorsHistory.map((sensor) => {
-    const date = new Date(sensor.lastSeen);
-    const timeString = date.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
+  const { history, loading, error } = useSensorHistory(20);
+
+  const chartData = history
+    .slice()
+    .reverse()
+    .map((sensor) => {
+      const date = new Date(sensor.createdAt);
+      const timeString = date.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      return {
+        time: timeString,
+        temperature: sensor.temperature,
+        humidity: sensor.humidity,
+      };
     });
 
-    return {
-      time: timeString,
-      temperature: sensor.temperature,
-      humidity: sensor.humidity,
-    };
-  });
+  if (error) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Histórico de Temperatura</CardTitle>
+        </CardHeader>
+        <div className="p-6 pt-0">
+          <p className="text-red-500">Erro ao carregar gráfico: {error.message}</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Histórico de Temperatura</CardTitle>
+        </CardHeader>
+        <div className="p-6 pt-0">
+          <Skeleton className="w-full h-80" />
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">

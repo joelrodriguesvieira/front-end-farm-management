@@ -15,42 +15,28 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import { ActionsTable } from "@/src/components/shared/actions-table";
+import { useSensor, useSensorHistory, useConfig } from "@/src/hooks/useApi";
 import { useMemo } from "react";
-
-/* ---------------- MOCK ---------------- */
-
-// simulando retorno do backend
-const foodWeightFromBackend = 400; // em gramas
-
-const MIN_WEIGHT = 100;
-const MAX_WEIGHT = 500;
-
-const foodHistoryMock = [
-  { id: "1", user: "Joel", quantity: "—", dateTime: "08:00" },
-  { id: "2", user: "Joel", quantity: "—", dateTime: "12:00" },
-  { id: "3", user: "Joel", quantity: "—", dateTime: "18:00" },
-];
-
-const foodChartMock = [
-  { time: "08h", level: 90 },
-  { time: "10h", level: 75 },
-  { time: "12h", level: 60 },
-  { time: "14h", level: 45 },
-  { time: "16h", level: 30 },
-];
+import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function FoodPage() {
+  const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
+  const { history, loading: historyLoading } = useSensorHistory(10);
+  const { config, error: configError } = useConfig();
+
+  const foodWeight = sensor?.rationWeight || 0;
+  const minWeight = config?.ration?.minWeight || 100;
+  const maxWeight = config?.ration?.maxWeight || 500;
+
   const foodPercentage = useMemo(() => {
     return Math.max(
       0,
       Math.min(
-        ((foodWeightFromBackend - MIN_WEIGHT) / (MAX_WEIGHT - MIN_WEIGHT)) *
-          100,
+        ((foodWeight - minWeight) / (maxWeight - minWeight)) * 100,
         100,
       ),
     );
-  }, [foodWeightFromBackend]);
+  }, [foodWeight, minWeight, maxWeight]);
 
   const getStatus = () => {
     if (foodPercentage > 60) return "Abastecido";
@@ -58,17 +44,40 @@ export default function FoodPage() {
     return "Baixo";
   };
 
+  const foodChartData = history
+    .slice()
+    .reverse()
+    .map((h) => {
+      const date = new Date(h.createdAt);
+      const timeString = date.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const percent = Math.max(0, Math.min(((h.rationWeight - minWeight) / (maxWeight - minWeight)) * 100, 100));
+      return {
+        time: timeString,
+        level: Math.round(percent),
+      };
+    });
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold">Alimentação</h1>
+
+        {(sensorError || configError) && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+            {sensorError && <p>❌ Erro ao carregar dados de sensor: {sensorError.message}</p>}
+            {configError && <p>❌ Erro ao carregar configurações: {configError.message}</p>}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <Card>
             <CardHeader className="px-6">
               <CardDescription>Quantidade atual</CardDescription>
               <CardTitle className="text-2xl tabular-nums">
-                {Math.round(foodPercentage)}%
+                {sensorLoading ? <Skeleton className="h-8 w-12" /> : `${Math.round(foodPercentage)}%`}
               </CardTitle>
               <Progress value={foodPercentage} className="mt-4 h-3" />
             </CardHeader>
@@ -86,7 +95,7 @@ export default function FoodPage() {
                       : "text-green-500"
                 }`}
               >
-                {getStatus()}
+                {sensorLoading ? <Skeleton className="h-8 w-16" /> : getStatus()}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -95,7 +104,7 @@ export default function FoodPage() {
             <CardHeader className="px-6">
               <CardDescription>Peso atual</CardDescription>
               <CardTitle className="text-2xl">
-                {foodWeightFromBackend}g
+                {sensorLoading ? <Skeleton className="h-8 w-16" /> : `${Math.round(foodWeight)}g`}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -107,28 +116,20 @@ export default function FoodPage() {
           </CardHeader>
 
           <div className="h-[220px] px-4 pb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={foodChartMock}>
-                <XAxis dataKey="time" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="level" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            {historyLoading ? (
+              <Skeleton className="w-full h-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={foodChartData}>
+                  <XAxis dataKey="time" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="level" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
-
-        <div className="overflow-x-auto">
-          <ActionsTable
-            columns={[
-              { accessorKey: "user", header: "Usuário" },
-              { accessorKey: "quantity", header: "Quantidade" },
-              { accessorKey: "dateTime", header: "Horário" },
-            ]}
-            data={foodHistoryMock}
-            title="Histórico de Alimentação"
-          />
-        </div>
       </div>
     </div>
   );

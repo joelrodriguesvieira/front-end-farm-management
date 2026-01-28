@@ -15,18 +15,30 @@ import {
   Tooltip,
 } from "recharts";
 import { Droplets } from "lucide-react";
-import { useState } from "react";
-
-const waterHistoryMock = [
-  { time: "08h", level: 1 },
-  { time: "10h", level: 1 },
-  { time: "12h", level: 0 },
-  { time: "14h", level: 0 },
-  { time: "16h", level: 1 },
-];
+import { useSensor, useSensorHistory } from "@/src/hooks/useApi";
+import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function WaterPage() {
-  const [value, setValue] = useState(true);
+  const { sensor, loading: sensorLoading } = useSensor();
+  const { history, loading: historyLoading } = useSensorHistory(10);
+
+  const waterHistoryData = history
+    .slice()
+    .reverse()
+    .map((h) => {
+      const date = new Date(h.createdAt);
+      const timeString = date.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return {
+        time: timeString,
+        level: h.waterLevel ? 1 : 0,
+      };
+    });
+
+  const waterStatus = sensor?.waterLevel ? "Nível Alto" : "Nível Baixo";
+  const waterStatusColor = sensor?.waterLevel ? "text-green-500" : "text-red-500";
 
   return (
     <div className="flex flex-col gap-6 px-4 md:px-8 py-4 w-full lg:max-w-5xl">
@@ -35,13 +47,13 @@ export default function WaterPage() {
       <Card>
         <CardHeader className="px-6">
           <CardDescription>Status do reservatório</CardDescription>
-          <CardTitle
-            className={`text-2xl flex items-center gap-2 ${
-              value ? "text-green-500" : "text-red-500"
-            }`}
-          >
+          <CardTitle className={`text-2xl flex items-center gap-2 ${waterStatusColor}`}>
             <Droplets className="h-6 w-6" />
-            {value ? "Nível Alto" : "Nível Baixo"}
+            {sensorLoading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : (
+              waterStatus
+            )}
           </CardTitle>
         </CardHeader>
       </Card>
@@ -55,23 +67,27 @@ export default function WaterPage() {
         </CardHeader>
 
         <div className="h-[220px] px-4 pb-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={waterHistoryMock}>
-              <XAxis dataKey="time" />
-              <YAxis
-                ticks={[0, 1]}
-                tickFormatter={(v) => (v === 1 ? "Alto" : "Baixo")}
-              />
+          {historyLoading ? (
+            <Skeleton className="w-full h-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={waterHistoryData}>
+                <XAxis dataKey="time" />
+                <YAxis
+                  ticks={[0, 1]}
+                  tickFormatter={(v) => (v === 1 ? "Alto" : "Baixo")}
+                />
 
-              <Tooltip
-                formatter={(value) =>
-                  value === 1 ? "Nível Alto" : "Nível Baixo"
-                }
-              />
+                <Tooltip
+                  formatter={(value) =>
+                    value === 1 ? "Nível Alto" : "Nível Baixo"
+                  }
+                />
 
-              <Line type="stepAfter" dataKey="level" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+                <Line type="stepAfter" dataKey="level" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </Card>
     </div>
