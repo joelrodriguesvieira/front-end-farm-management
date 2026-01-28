@@ -35,14 +35,19 @@ class ApiService {
       });
 
       if (!response.ok) {
-        const error: ApiError = await response.json();
-        throw new Error(error.message || `API error: ${response.status}`);
+        let errorMsg = `HTTP ${response.status}`;
+        try {
+          const error: ApiError = await response.json();
+          errorMsg = error.message || errorMsg;
+        } catch {
+          // If response is not JSON, use status message
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error(`API Error (${endpoint}):`, error);
       throw error;
     }
   }
@@ -160,10 +165,10 @@ class ApiService {
   /**
    * Fetch all actions with pagination and optional filtering
    * @param limit - Number of records to return (default: 10)
-   * @param skip - Number of records to skip (default: 0)
+   * @param skip - Number of records to skip (default: 0) - not currently used by backend
    * @param system - Optional filter by system (light, fan, water, food)
    */
-  async getActions(limit: number = 10, skip: number = 0, system?: string): Promise<Action[]> {
+  async getActions(limit: number = 10, skip?: number, system?: string): Promise<Action[]> {
     let endpoint = `/actions`;
     const params = [];
     

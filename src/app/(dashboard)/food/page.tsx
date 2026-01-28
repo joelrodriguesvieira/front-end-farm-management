@@ -15,15 +15,13 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import { ActionsTable } from "@/src/components/shared/actions-table";
-import { useSensor, useSensorHistory, useActions, useConfig } from "@/src/hooks/useApi";
+import { useSensor, useSensorHistory, useConfig } from "@/src/hooks/useApi";
 import { useMemo } from "react";
 import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function FoodPage() {
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
   const { history, loading: historyLoading } = useSensorHistory(10);
-  const { actions, loading: actionsLoading, error: actionsError } = useActions();
   const { config, error: configError } = useConfig();
 
   const foodWeight = sensor?.rationWeight || 0;
@@ -59,23 +57,6 @@ export default function FoodPage() {
       return {
         time: timeString,
         level: Math.round(percent),
-      };
-    });
-
-  const foodHistoryData = actions
-    .filter((a) => a.system === "ration")
-    .slice(0, 10)
-    .map((action) => {
-      const date = new Date(action.createdAt);
-      const timeString = date.toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      return {
-        id: action.id.toString(),
-        user: "Sistema",
-        quantity: action.quantity ? `${action.quantity}g` : "—",
-        dateTime: timeString,
       };
     });
 
@@ -149,23 +130,6 @@ export default function FoodPage() {
             )}
           </div>
         </Card>
-
-        <div className="overflow-x-auto">
-          <ActionsTable
-            columns={[
-              { accessorKey: "user", header: "Usuário" },
-              { accessorKey: "quantity", header: "Quantidade" },
-              { accessorKey: "dateTime", header: "Horário" },
-            ]}
-            data={actionsLoading ? [] : foodHistoryData}
-            title={actionsLoading ? "Carregando histórico..." : "Histórico de Alimentação"}
-          />
-          {actionsError && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-              Erro ao carregar histórico: {actionsError.message}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

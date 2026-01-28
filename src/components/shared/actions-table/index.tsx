@@ -2,7 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./data-table";
 
 interface ActionsTableProps<TData> {
-  columns: ColumnDef<TData, any>[];
+  columns: ColumnDef<TData, unknown>[];
   data: TData[];
   title?: string;
 }
