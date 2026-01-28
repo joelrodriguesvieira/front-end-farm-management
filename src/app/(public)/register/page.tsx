@@ -12,6 +12,7 @@ import { Label } from "@/src/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatCpfCnpj, formatPhone, formatRG } from "@/src/shared/helpers";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -110,9 +111,9 @@ export default function RegisterPage() {
             <Label htmlFor="rg">RG</Label>
             <Input
               id="rg"
-              placeholder="Seu RG"
+              placeholder="00.000.000-0"
               value={rg}
-              onChange={(e) => setRg(e.target.value)}
+              onChange={(e) => setRg(formatRG(e.target.value))}
               className="h-12"
             />
           </div>
@@ -121,9 +122,9 @@ export default function RegisterPage() {
             <Label htmlFor="cpfCnpj">CPF ou CNPJ</Label>
             <Input
               id="cpfCnpj"
-              placeholder="Seu CPF ou CNPJ"
+              placeholder="CPF ou CNPJ"
               value={cpfCnpj}
-              onChange={(e) => setCpfCnpj(e.target.value)}
+              onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
               className="h-12"
             />
           </div>
@@ -134,7 +135,7 @@ export default function RegisterPage() {
               id="phone"
               placeholder="(XX) XXXXX-XXXX"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
               className="h-12"
             />
           </div>
