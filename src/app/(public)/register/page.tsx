@@ -29,7 +29,7 @@ export default function RegisterPage() {
   const handleRegister = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}api/auth/register`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
         {
           method: "POST",
           headers: {
@@ -59,9 +59,10 @@ export default function RegisterPage() {
       console.log("Sucesso:", data);
       alert("Conta criada com sucesso!");
       router.push("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert(error.message || "Erro inesperado");
+      const message = error instanceof Error ? error.message : "Erro inesperado";
+      alert(message);
     }
   };
 

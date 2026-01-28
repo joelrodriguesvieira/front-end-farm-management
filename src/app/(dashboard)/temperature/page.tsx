@@ -9,14 +9,16 @@ import {
 } from "@/src/components/ui/card";
 import { TemperatureChart } from "./components/temperature-chart";
 import { Button } from "@/src/components/ui/button";
-import { Power } from "lucide-react";
-import { useState } from "react";
+import { Power, Fan } from "lucide-react";
+import { Label } from "@/src/components/ui/label";
+import { Switch } from "@/src/components/ui/switch";
 import { useSensor } from "@/src/hooks/useApi";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { apiService } from "@/src/lib/api";
 
 export default function TemperaturePage() {
   const [ventOn, setVentOn] = useState(false);
+  const [autoMode, setAutoMode] = useState(false);
   const [commandLoading, setCommandLoading] = useState(false);
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
 
@@ -80,7 +82,7 @@ export default function TemperaturePage() {
                 }`}
               >
                 <Fan className="h-6 w-6" />
-                {ventStatusLabel}
+                {ventOn ? "Ligada" : "Desligada"}
               </CardTitle>
             </CardHeader>
           </Card>
