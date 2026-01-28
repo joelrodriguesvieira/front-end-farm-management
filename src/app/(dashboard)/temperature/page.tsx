@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardDescription,
@@ -13,23 +13,51 @@ import { Power, Fan } from "lucide-react";
 import { Label } from "@/src/components/ui/label";
 import { Switch } from "@/src/components/ui/switch";
 import { useSensor } from "@/src/hooks/useApi";
+import { useCurrentUser } from "@/src/hooks/useCurrentUser";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { apiService } from "@/src/lib/api";
 
 export default function TemperaturePage() {
+  const { userId } = useCurrentUser();
   const [ventOn, setVentOn] = useState(false);
   const [autoMode, setAutoMode] = useState(false);
   const [commandLoading, setCommandLoading] = useState(false);
+  const [loadingVentStatus, setLoadingVentStatus] = useState(true);
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
 
+  // Fetch last fan command to determine current status
+  useEffect(() => {
+    const fetchVentStatus = async () => {
+      try {
+        setLoadingVentStatus(true);
+        const fanActions = await apiService.getActions(1, 0, "fan");
+        
+        if (fanActions && fanActions.length > 0) {
+          const isOn = fanActions[0].action === "ON";
+          setVentOn(isOn);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar status da ventilação:", error);
+      } finally {
+        setLoadingVentStatus(false);
+      }
+    };
+
+    fetchVentStatus();
+  }, []);
+
   const handleToggleVent = async () => {
+    if (!userId) {
+      alert("Usuário não identificado");
+      return;
+    }
     try {
       setCommandLoading(true);
       const newState = ventOn ? "OFF" : "ON";
       await apiService.sendCommand({
         actuator: "fan",
         state: newState,
-        userId: 1,
+        userId,
       });
       setVentOn((prev) => !prev);
     } catch (error) {
@@ -82,7 +110,7 @@ export default function TemperaturePage() {
                 }`}
               >
                 <Fan className="h-6 w-6" />
-                {ventOn ? "Ligada" : "Desligada"}
+                {loadingVentStatus ? <Skeleton className="h-8 w-20" /> : (ventOn ? "Ligada" : "Desligada")}
               </CardTitle>
             </CardHeader>
           </Card>

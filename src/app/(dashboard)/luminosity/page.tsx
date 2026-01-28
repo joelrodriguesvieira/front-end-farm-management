@@ -21,10 +21,12 @@ import { Lightbulb, Power, Clock } from "lucide-react";
 import { ActionsTable } from "@/src/components/shared/actions-table";
 import { Input } from "@/src/components/ui/input";
 import { useConfig, useActions, useSensor } from "@/src/hooks/useApi";
+import { useCurrentUser } from "@/src/hooks/useCurrentUser";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { apiService } from "@/src/lib/api";
 
 export default function LuminosityPage() {
+  const { userId } = useCurrentUser();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [onTime, setOnTime] = useState("06:00");
   const [offTime, setOffTime] = useState("18:00");
@@ -66,13 +68,17 @@ export default function LuminosityPage() {
   const autoMode = config?.mode === "auto";
 
   const handleToggleLight = async () => {
+    if (!userId) {
+      alert("Usuário não identificado");
+      return;
+    }
     try {
       setCommandLoading(true);
       const newState = isOn ? "OFF" : "ON";
       await apiService.sendCommand({
         actuator: "light",
         state: newState,
-        userId: 1,
+        userId,
       });
       setIsOn((prev) => !prev);
     } catch (error) {
