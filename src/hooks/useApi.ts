@@ -149,7 +149,7 @@ export function useDevices(initialData?: Device[] | null) {
 
 // ==================== ACTIONS HOOK ====================
 
-export function useActions(initialData?: Action[] | null) {
+export function useActions(initialData?: Action[] | null, system?: string) {
   const [actions, setActions] = useState<Action[]>(initialData || []);
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<Error | null>(null);
@@ -160,7 +160,7 @@ export function useActions(initialData?: Action[] | null) {
     const fetchActions = async () => {
       try {
         setLoading(true);
-        const data = await apiService.getActions();
+        const data = await apiService.getActions(10, 0, system);
         setActions(data);
         setError(null);
       } catch (err) {
@@ -172,7 +172,7 @@ export function useActions(initialData?: Action[] | null) {
     };
 
     fetchActions();
-  }, [initialData]);
+  }, [initialData, system]);
 
   const createAction = async (
     data: Omit<Action, "id" | "createdAt">

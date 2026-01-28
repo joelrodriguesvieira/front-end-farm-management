@@ -29,10 +29,33 @@ export default function LuminosityPage() {
   const [onTime, setOnTime] = useState("06:00");
   const [offTime, setOffTime] = useState("18:00");
   const [commandLoading, setCommandLoading] = useState(false);
+  const [isOn, setIsOn] = useState(false);
+  const [loadingLightStatus, setLoadingLightStatus] = useState(true);
 
   const { config, updateConfig, loading: configLoading, error: configError } = useConfig();
   const { actions, loading: actionsLoading, error: actionsError } = useActions();
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
+
+  // Fetch last light command to determine current status
+  useEffect(() => {
+    const fetchLightStatus = async () => {
+      try {
+        setLoadingLightStatus(true);
+        const lightActions = await apiService.getActions(1, 0, "light");
+        
+        if (lightActions && lightActions.length > 0) {
+          const isOn = lightActions[0].action === "ON";
+          setIsOn(isOn);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar status da luz:", error);
+      } finally {
+        setLoadingLightStatus(false);
+      }
+    };
+
+    fetchLightStatus();
+  }, []);
 
   // Update local state when config loads
   useEffect(() => {
@@ -41,7 +64,6 @@ export default function LuminosityPage() {
   }, [config]);
 
   const autoMode = config?.mode === "auto";
-  const [isOn, setIsOn] = useState(false);
 
   const handleToggleLight = async () => {
     try {
@@ -98,13 +120,11 @@ export default function LuminosityPage() {
       });
       return {
         id: action.id.toString(),
-        user: "Sistema",
+        user: action.user?.name || "Sistema",
         action: action.action.replace(/_/g, " "),
         time: timeString,
       };
     });
-
-  const statusLabel = isOn ? "Acesa" : "Apagada";
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-2rem)] gap-6 px-4 md:px-8 py-4 pb-10 w-full lg:max-w-5xl">
@@ -139,7 +159,7 @@ export default function LuminosityPage() {
                 }`}
               >
                 <Lightbulb className="h-6 w-6" />
-                {statusLabel}
+                {loadingLightStatus ? <Skeleton className="h-8 w-20" /> : (isOn ? "Acesa" : "Apagada")}
               </CardTitle>
             </CardHeader>
           </Card>

@@ -158,10 +158,25 @@ class ApiService {
   // ==================== ACTIONS ====================
 
   /**
-   * Fetch all actions
+   * Fetch all actions with pagination and optional filtering
+   * @param limit - Number of records to return (default: 10)
+   * @param skip - Number of records to skip (default: 0)
+   * @param system - Optional filter by system (light, fan, water, food)
    */
-  async getActions(): Promise<Action[]> {
-    return this.request("/actions");
+  async getActions(limit: number = 10, skip: number = 0, system?: string): Promise<Action[]> {
+    let endpoint = `/actions`;
+    const params = [];
+    
+    if (system) {
+      params.push(`system=${system}`);
+    }
+    params.push(`limit=${limit}`);
+    
+    if (params.length > 0) {
+      endpoint += `?${params.join('&')}`;
+    }
+    
+    return this.request(endpoint);
   }
 
   /**

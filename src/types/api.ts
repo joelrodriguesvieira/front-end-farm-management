@@ -50,6 +50,10 @@ export interface Action {
   action: string;
   quantity: number | null;
   createdAt: string;
+  user?: {
+    name: string;
+    email: string;
+  };
 }
 
 // Command Types

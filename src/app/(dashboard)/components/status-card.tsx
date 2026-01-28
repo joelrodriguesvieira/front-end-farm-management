@@ -9,7 +9,7 @@ export default function StatusCard({
   href,
 }: {
   title: string;
-  value: string;
+  value: string | React.ReactNode;
   description: string;
   icon: React.ReactNode;
   href: string;

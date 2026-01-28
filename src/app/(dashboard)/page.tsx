@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Droplet, Lightbulb, Thermometer, Wheat, Timer } from "lucide-react";
 import {
   Card,
@@ -21,14 +21,42 @@ import { Button } from "@/src/components/ui/button";
 import { Slider } from "@/src/components/ui/slider";
 import { Label } from "@/src/components/ui/label";
 import { useSensor, useConfig, useActions } from "@/src/hooks/useApi";
+import { Skeleton } from "@/src/components/ui/skeleton";
+import { apiService } from "@/src/lib/api";
 
 export default function Home() {
   const [delay, setDelay] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [lightStatus, setLightStatus] = useState("--");
+  const [loadingLightStatus, setLoadingLightStatus] = useState(true);
   
   const { sensor } = useSensor();
   const { updateConfig } = useConfig();
-  const { actions } = useActions();
+  const { actions, loading: actionsLoading, error: actionsError } = useActions();
+
+  // Fetch light status
+  useEffect(() => {
+    const fetchLightStatus = async () => {
+      try {
+        setLoadingLightStatus(true);
+        const lightActions = await apiService.getActions(1, 0, "light");
+        
+        if (lightActions && lightActions.length > 0) {
+          const isOn = lightActions[0].action === "ON";
+          setLightStatus(isOn ? "Acesa" : "Apagada");
+        } else {
+          setLightStatus("--");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar status da luz:", error);
+        setLightStatus("--");
+      } finally {
+        setLoadingLightStatus(false);
+      }
+    };
+
+    fetchLightStatus();
+  }, []);
 
   async function handleSaveDelay() {
     try {
@@ -45,7 +73,7 @@ export default function Home() {
 
 
   // Format actions data for table
-  const tableData = actions.slice(0, 10).map((action) => {
+  const tableData = actions.map((action) => {
     const date = new Date(action.createdAt);
     const timeString = date.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
@@ -56,7 +84,7 @@ export default function Home() {
       id: action.id.toString(),
       system: action.system.charAt(0).toUpperCase() + action.system.slice(1),
       action: action.action.replace(/_/g, " "),
-      type: "Manual",
+      type: action.user?.name || "Sistema",
       time: timeString,
     };
   });
@@ -93,7 +121,7 @@ export default function Home() {
 
         <StatusCard
           title="Luminosidade"
-          value="--"
+          value={loadingLightStatus ? <Skeleton className="h-6 w-16" /> : lightStatus}
           description="Status"
           icon={<Lightbulb />}
           href="/luminosity"
@@ -112,16 +140,34 @@ export default function Home() {
 
       {/* HISTÓRICO */}
       <div className="overflow-x-auto">
-        <ActionsTable
-          title="Últimas Ações do Sistema"
-          columns={[
-            { accessorKey: "system", header: "Sistema" },
-            { accessorKey: "action", header: "Ação" },
-            { accessorKey: "type", header: "Tipo" },
-            { accessorKey: "time", header: "Horário" },
-          ]}
-          data={tableData}
-        />
+        {actionsError && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded text-sm text-red-600 mb-4">
+            Erro ao carregar histórico: {actionsError.message}
+          </div>
+        )}
+        {actionsLoading ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Últimas Ações do Sistema</CardTitle>
+            </CardHeader>
+            <div className="px-6 pb-4 space-y-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          </Card>
+        ) : (
+          <ActionsTable
+            title="Últimas Ações do Sistema"
+            columns={[
+              { accessorKey: "system", header: "Sistema" },
+              { accessorKey: "action", header: "Ação" },
+              { accessorKey: "type", header: "Tipo" },
+              { accessorKey: "time", header: "Horário" },
+            ]}
+            data={tableData}
+          />
+        )}
       </div>
 
       {/* CONFIGURAÇÃO DE SENSORES */}
