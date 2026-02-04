@@ -10,8 +10,7 @@ import {
   CommandResponse,
 } from "@/src/types/api";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 class ApiService {
   private baseUrl: string;
@@ -22,14 +21,20 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}/api${endpoint}`;
+
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
 
     try {
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
           ...options.headers,
         },
         ...options,
@@ -60,8 +65,13 @@ class ApiService {
    * @param limit - Number of records to return (default: 1)
    * @param skip - Number of records to skip (default: 0)
    */
-  async getSensors(limit: number = 1, skip: number = 0): Promise<Sensor | Sensor[]> {
-    const response = await this.request<SensorHistoryResponse>(`/sensors?limit=${limit}&skip=${skip}`);
+  async getSensors(
+    limit: number = 1,
+    skip: number = 0,
+  ): Promise<Sensor | Sensor[]> {
+    const response = await this.request<SensorHistoryResponse>(
+      `/sensors?limit=${limit}&skip=${skip}`,
+    );
     return response.value || response;
   }
 
@@ -69,7 +79,8 @@ class ApiService {
    * Fetch latest sensor reading
    */
   async getLatestSensor(): Promise<Sensor> {
-    const response = await this.request<SensorHistoryResponse>("/sensors?limit=1");
+    const response =
+      await this.request<SensorHistoryResponse>("/sensors?limit=1");
     const data = response.value || response;
     return Array.isArray(data) ? data[0] : data;
   }
@@ -77,8 +88,13 @@ class ApiService {
   /**
    * Fetch sensor history
    */
-  async getSensorHistory(limit: number = 10, skip: number = 0): Promise<Sensor[]> {
-    const response = await this.request<SensorHistoryResponse>(`/sensors?limit=${limit}&skip=${skip}`);
+  async getSensorHistory(
+    limit: number = 10,
+    skip: number = 0,
+  ): Promise<Sensor[]> {
+    const response = await this.request<SensorHistoryResponse>(
+      `/sensors?limit=${limit}&skip=${skip}`,
+    );
     return response.value || response;
   }
 
@@ -112,7 +128,7 @@ class ApiService {
    * Create a new device
    */
   async createDevice(
-    data: Omit<Device, "id" | "createdAt" | "updatedAt">
+    data: Omit<Device, "id" | "createdAt" | "updatedAt">,
   ): Promise<Device> {
     return this.request("/devices", {
       method: "POST",
@@ -125,7 +141,7 @@ class ApiService {
    */
   async updateDevice(
     id: number,
-    data: Partial<Omit<Device, "id" | "createdAt" | "updatedAt">>
+    data: Partial<Omit<Device, "id" | "createdAt" | "updatedAt">>,
   ): Promise<Device> {
     return this.request(`/devices/${id}`, {
       method: "PUT",
@@ -154,7 +170,9 @@ class ApiService {
   /**
    * Update configuration
    */
-  async updateConfig(data: Partial<Omit<Config, "id" | "createdAt" | "updatedAt">>): Promise<Config> {
+  async updateConfig(
+    data: Partial<Omit<Config, "id" | "createdAt" | "updatedAt">>,
+  ): Promise<Config> {
     return this.request("/config", {
       method: "PUT",
       body: JSON.stringify(data),
@@ -169,28 +187,30 @@ class ApiService {
    * @param skip - Number of records to skip (default: 0) - not currently used by backend
    * @param system - Optional filter by system (light, fan, water, food)
    */
-  async getActions(limit: number = 10, skip?: number, system?: string): Promise<Action[]> {
+  async getActions(
+    limit: number = 10,
+    skip?: number,
+    system?: string,
+  ): Promise<Action[]> {
     let endpoint = `/actions`;
     const params = [];
-    
+
     if (system) {
       params.push(`system=${system}`);
     }
     params.push(`limit=${limit}`);
-    
+
     if (params.length > 0) {
-      endpoint += `?${params.join('&')}`;
+      endpoint += `?${params.join("&")}`;
     }
-    
+
     return this.request(endpoint);
   }
 
   /**
    * Create a new action
    */
-  async createAction(
-    data: Omit<Action, "id" | "createdAt">
-  ): Promise<Action> {
+  async createAction(data: Omit<Action, "id" | "createdAt">): Promise<Action> {
     return this.request("/actions", {
       method: "POST",
       body: JSON.stringify(data),
