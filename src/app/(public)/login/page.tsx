@@ -16,7 +16,7 @@ import { Label } from "@/src/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
-
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -75,10 +75,18 @@ export default function LoginPage() {
             <Label htmlFor="password">Senha</Label>
             <Input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={() => setShowPassword(!showPassword)}
+                />
+                <span>Mostrar senha</span>
+              </div>
           </div>
 
           {error && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -15,18 +16,30 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/src/components/ui/dialog";
+import { Button } from "@/src/components/ui/button";
+import { Label } from "@/src/components/ui/label";
+import { Input } from "@/src/components/ui/input";
+import { Sliders } from "lucide-react";
 import { useSensor, useSensorHistory, useConfig } from "@/src/hooks/useApi";
-import { useMemo } from "react";
 import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function FoodPage() {
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
   const { history, loading: historyLoading } = useSensorHistory(10);
-  const { config, error: configError } = useConfig();
+  const { error: configError } = useConfig();
+
+  const [limitsOpen, setLimitsOpen] = useState(false);
+  const [minWeight, setMinWeight] = useState<number>(100);
+  const [maxWeight, setMaxWeight] = useState<number>(500);
 
   const foodWeight = sensor?.rationWeight || 0;
-  const minWeight = config?.ration?.minWeight || 100;
-  const maxWeight = config?.ration?.maxWeight || 500;
 
   const foodPercentage = useMemo(() => {
     return Math.max(
@@ -42,6 +55,10 @@ export default function FoodPage() {
     if (foodPercentage > 60) return "Abastecido";
     if (foodPercentage >= 30) return "Atenção";
     return "Baixo";
+  };
+
+  const handleSaveLimits = () => {
+    setLimitsOpen(false);
   };
 
   const foodChartData = history
@@ -130,6 +147,56 @@ export default function FoodPage() {
             )}
           </div>
         </Card>
+      </div>
+
+      <div className="flex flex-col gap-6 pb-6 md:pb-12 mt-4">
+        <Dialog open={limitsOpen} onOpenChange={setLimitsOpen}>
+          <DialogTrigger asChild>
+            <Button variant="secondary" className="w-full h-12">
+              Definir limites de comida
+              <Sliders className="ml-2 h-5 w-5" />
+            </Button>
+          </DialogTrigger>
+
+          <DialogContent className="sm:max-w-[400px] w-[90%] rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-center">
+                Configurar limites de alimentação
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="min-weight">Peso mínimo (g)</Label>
+                <Input
+                  id="min-weight"
+                  type="number"
+                  value={minWeight}
+                  onChange={(e) => setMinWeight(Number(e.target.value))}
+                  className="h-12"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="max-weight">Peso máximo (g)</Label>
+                <Input
+                  id="max-weight"
+                  type="number"
+                  value={maxWeight}
+                  onChange={(e) => setMaxWeight(Number(e.target.value))}
+                  className="h-12"
+                />
+              </div>
+
+              <Button
+                className="w-full h-12"
+                onClick={handleSaveLimits}
+              >
+                Salvar limites
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

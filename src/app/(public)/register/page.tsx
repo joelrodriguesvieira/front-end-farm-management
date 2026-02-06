@@ -25,6 +25,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const router = useRouter();
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async () => {
     try {
@@ -47,7 +48,6 @@ export default function RegisterPage() {
           }),
         },
       );
-      console.log(response, "response");
 
       if (!response.ok) {
         const error = await response.json();
@@ -62,7 +62,7 @@ export default function RegisterPage() {
     } catch (error: unknown) {
       console.error(error);
       const message = error instanceof Error ? error.message : "Erro inesperado";
-      alert(message);
+      setError(message);
     }
   };
 
@@ -112,7 +112,7 @@ export default function RegisterPage() {
             <Label htmlFor="rg">RG</Label>
             <Input
               id="rg"
-              placeholder="00.000.000-0"
+              placeholder="00.000.000"
               value={rg}
               onChange={(e) => setRg(formatRG(e.target.value))}
               className="h-12"
@@ -155,14 +155,25 @@ export default function RegisterPage() {
 
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-12"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-12 pr-10"
+              />
+
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={() => setShowPassword(!showPassword)}
+                />
+                <span>Mostrar senha</span>
+              </div>
+
+            </div>
           </div>
 
           <Button onClick={handleRegister} className="w-full h-12">

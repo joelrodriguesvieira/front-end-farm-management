@@ -1,12 +1,10 @@
 const onlyNumbers = (value: string) => value.replace(/\D/g, "");
 
 export function formatRG(value: string) {
-  let valueFormated = onlyNumbers(value).slice(0, 9);
+  let valueFormated = onlyNumbers(value).slice(0, 8);
 
   if (valueFormated.length > 2) valueFormated = valueFormated.replace(/^(\d{2})(\d)/, "$1.$2");
-  if (valueFormated.length > 6) valueFormated = valueFormated.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-  if (valueFormated.length > 9)
-    valueFormated = valueFormated.replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+  if (valueFormated.length > 5) valueFormated = valueFormated.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
 
   return valueFormated;
 }
