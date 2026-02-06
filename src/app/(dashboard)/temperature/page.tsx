@@ -9,9 +9,17 @@ import {
 } from "@/src/components/ui/card";
 import { TemperatureChart } from "./components/temperature-chart";
 import { Button } from "@/src/components/ui/button";
-import { Power, Fan } from "lucide-react";
+import { Power, Fan, Sliders } from "lucide-react";
 import { Label } from "@/src/components/ui/label";
 import { Switch } from "@/src/components/ui/switch";
+import { Input } from "@/src/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/src/components/ui/dialog";
 import { useSensor } from "@/src/hooks/useApi";
 import { useCurrentUser } from "@/src/hooks/useCurrentUser";
 import { Skeleton } from "@/src/components/ui/skeleton";
@@ -23,6 +31,11 @@ export default function TemperaturePage() {
   const [autoMode, setAutoMode] = useState(false);
   const [commandLoading, setCommandLoading] = useState(false);
   const [loadingVentStatus, setLoadingVentStatus] = useState(true);
+  const [limitsOpen, setLimitsOpen] = useState(false);
+  const [minTemp, setMinTemp] = useState<number>(20);
+  const [maxTemp, setMaxTemp] = useState<number>(30);
+  const [savingLimits, setSavingLimits] = useState(false);
+  const [limitError, setLimitError] = useState<string | null>(null);
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
 
   // Fetch last fan command to determine current status
@@ -65,6 +78,27 @@ export default function TemperaturePage() {
       alert("Erro ao enviar comando para ventilação");
     } finally {
       setCommandLoading(false);
+    }
+  };
+
+  const handleSaveLimits = async () => {
+    try {
+      setSavingLimits(true);
+      setLimitError(null);
+
+      await apiService.updateConfig({
+        temperature: {
+          min: minTemp,
+          max: maxTemp,
+        },
+      });
+
+      setLimitsOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao salvar limites";
+      setLimitError(message);
+    } finally {
+      setSavingLimits(false);
     }
   };
 
@@ -127,6 +161,63 @@ export default function TemperaturePage() {
           </Label>
           <Switch checked={autoMode} onCheckedChange={setAutoMode} />
         </div>
+
+        <Dialog open={limitsOpen} onOpenChange={setLimitsOpen}>
+          <DialogTrigger asChild>
+            <Button variant="secondary" className="w-full h-12">
+              Definir limites de temperatura
+              <Sliders className="ml-2 h-5 w-5" />
+            </Button>
+          </DialogTrigger>
+
+          <DialogContent className="sm:max-w-[400px] w-[90%] rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-center">
+                Configurar limites de temperatura
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="min-temp">Temperatura mínima (°C)</Label>
+                <Input
+                  id="min-temp"
+                  type="number"
+                  step="0.1"
+                  value={minTemp}
+                  onChange={(e) => setMinTemp(Number(e.target.value))}
+                  className="h-12"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="max-temp">Temperatura máxima (°C)</Label>
+                <Input
+                  id="max-temp"
+                  type="number"
+                  step="0.1"
+                  value={maxTemp}
+                  onChange={(e) => setMaxTemp(Number(e.target.value))}
+                  className="h-12"
+                />
+              </div>
+
+              {limitError && (
+                <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+                  {limitError}
+                </div>
+              )}
+
+              <Button
+                className="w-full h-12"
+                onClick={handleSaveLimits}
+                disabled={savingLimits}
+              >
+                {savingLimits ? "Salvando..." : "Salvar limites"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Button
           onClick={handleToggleVent}
