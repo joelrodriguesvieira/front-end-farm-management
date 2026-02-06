@@ -29,6 +29,7 @@ import { Input } from "@/src/components/ui/input";
 import { Sliders } from "lucide-react";
 import { useSensor, useSensorHistory, useConfig } from "@/src/hooks/useApi";
 import { Skeleton } from "@/src/components/ui/skeleton";
+import { apiService } from "@/src/lib/api";
 
 export default function FoodPage() {
   const { sensor, loading: sensorLoading, error: sensorError } = useSensor();
@@ -38,6 +39,8 @@ export default function FoodPage() {
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [minWeight, setMinWeight] = useState<number>(100);
   const [maxWeight, setMaxWeight] = useState<number>(500);
+  const [savingLimits, setSavingLimits] = useState(false);
+  const [limitError, setLimitError] = useState<string | null>(null);
 
   const foodWeight = sensor?.rationWeight || 0;
 
@@ -57,8 +60,25 @@ export default function FoodPage() {
     return "Baixo";
   };
 
-  const handleSaveLimits = () => {
-    setLimitsOpen(false);
+  const handleSaveLimits = async () => {
+    try {
+      setSavingLimits(true);
+      setLimitError(null);
+      
+      await apiService.updateConfig({
+        ration: {
+          minWeight,
+          maxWeight,
+        },
+      });
+      
+      setLimitsOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao salvar limites";
+      setLimitError(message);
+    } finally {
+      setSavingLimits(false);
+    }
   };
 
   const foodChartData = history
@@ -188,11 +208,18 @@ export default function FoodPage() {
                 />
               </div>
 
+              {limitError && (
+                <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+                  {limitError}
+                </div>
+              )}
+
               <Button
                 className="w-full h-12"
                 onClick={handleSaveLimits}
+                disabled={savingLimits}
               >
-                Salvar limites
+                {savingLimits ? "Salvando..." : "Salvar limites"}
               </Button>
             </div>
           </DialogContent>
